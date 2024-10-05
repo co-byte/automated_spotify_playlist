@@ -1,11 +1,17 @@
+import os
 from datetime import datetime
-from app.spotify.spotify_module import SpotifyAPI
-from radio_plus_module import RadioPlusAPI
+from dotenv import load_dotenv
 
+from radio_plus.radio_plus_module import RadioPlusAPI
+from spotify.spotify_module import SpotifyAPI
 import temp_secrets
 
-client_id = temp_secrets.client_id
-client_secret = temp_secrets.client_secret
+# Load environment variables from .env file
+load_dotenv()
+
+client_id = os.getenv("SPOTIFY_CLIENT_ID")
+client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+client_refresh_token = os.getenv("SPOTIFY_CLIENT_REFRESH_TOKEN")
 redirect_uri = "https://github.com/co-byte?tab=repositories"
 user_id = temp_secrets.user_id
 date_val = datetime.strftime(datetime.now(),"%Y-%m-%d")
@@ -16,6 +22,7 @@ selected_playlist_name = "Todays generated playlist"
 def update_playlist():
     spotify = SpotifyAPI(client_id=client_id,
                          client_secret=client_secret,
+                         client_refresh_token=client_refresh_token,
                          redirect_uri=redirect_uri
                          )
     selected_playlist_id = spotify.get_playlist_id(playlist_name=selected_playlist_name,

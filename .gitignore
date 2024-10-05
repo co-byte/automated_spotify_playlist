@@ -1,3 +1,7 @@
+# Remove me
+spotify_user_data.json
+temp_secrets.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

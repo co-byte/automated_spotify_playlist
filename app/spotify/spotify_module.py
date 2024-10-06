@@ -15,14 +15,13 @@ class SpotifyAPI:
     access_token = None
     access_token_expires = datetime.datetime.now()
     access_token_did_expire = True
-    api_version = 'v1' #TODO: replace
-    user_id = None
 
-    def __init__(self, client_id: str, client_secret: str, redirect_uri: str, scope: str, user_id :str, token_url: str, client_refresh_token: str, save_refresh_token_callback: Callable[[str], None]):
+    def __init__(self, client_id: str, client_secret: str, redirect_uri: str, api_version: str, scope: str, user_id :str, token_url: str, client_refresh_token: str, save_refresh_token_callback: Callable[[str], None]):
         #TODO: replace countless args with simple config-like class
         self.client_id = client_id
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
+        self.api_version = api_version
         self.scope = scope
         self.user_id = user_id
         self.refresh_token = client_refresh_token
@@ -64,39 +63,9 @@ class SpotifyAPI:
             self.refresh_token = refresh_token
 
     @staticmethod
-    def __load_json(file_name):
-        file = open(file_name)
-        content = json.load(file)
-        return content
-
-    @staticmethod
     def __write_json(file_name, data):
         with open(file_name, "w") as target:
             target.write(json.dump(data))
-
-    # AUTHORIZATION USING AUTENTICATION
-    def request_authorization(self):
-        base_authorization_url = "https://accounts.spotify.com/authorize"
-        url_body = {"client_id": self.client_id,
-                    "response_type": "code",
-                    "redirect_uri": self.redirect_uri,
-                    "scope": self.scope}
-        url_encoded_body = urlencode(url_body).replace("%2B", "+")
-        return f"{base_authorization_url}?{url_encoded_body}"
-
-    def request_access_and_refresh_tokens(self, auth_code):
-        base_url = "https://accounts.spotify.com/api/token"  # same
-        client_creds_b64 = self.__get_client_credentials()
-        headers = {"Authorization": f"Basic {client_creds_b64}",
-                   "Content-Type": "application/x-www-form-urlencoded"
-                   }
-        data = {"grant_type": "authorization_code",
-                "code": auth_code,
-                "redirect_uri": self.redirect_uri
-                }
-        request = requests.post(url=base_url, data=data, headers=headers)
-        self.__handle_request_status(request)
-        self.__process_token_data(request)
 
     def __refresh_access_token(self):
         base_url = "https://accounts.spotify.com/api/token"  # same
@@ -247,15 +216,6 @@ class SpotifyAPI:
         return id_set
 
     # BASIC ITEM GETTERS
-    def get_album(self, album_id):
-        return self.__get_resource_request(endpoint=f'albums/{album_id}')
-
-    def get_artist(self, artist_id):
-        return self.__get_resource_request(endpoint=f'artists/{artist_id}')
-
-    def get_track(self, track_id):
-        return self.__get_resource_request(endpoint=f"tracks/{track_id}")
-
     def get_playlist(self, playlist_id):
         return self.__get_resource_request(endpoint=f"playlists/{playlist_id}")
 
@@ -269,36 +229,6 @@ class SpotifyAPI:
         if print_results_is_on:
             [print(playlist["name"]) for playlist in playlists["items"]]
         return playlists
-
-    def get_user_profile(self, user_id):
-        return self.__get_resource_request(endpoint=f"users/{user_id}")
-
-    def get_current_user_profile(self, print_out_result=False):
-        user_profile = self.__get_resource_request(endpoint="me")
-        if print_out_result:
-            pprint(user_profile)
-        return user_profile
-
-    def get_current_users_top_items(self, type="tracks"):
-        top_items = self.__get_resource_request(endpoint=f"me/top/{type}")
-        return top_items
-
-    # TRACKS
-    def play_track(self):   # TODO: complete method
-        pass
-
-    def enqueue_track(self):    # TODO: complete method
-        pass
-
-    def dequeue_track(self):    # TODO: complete method
-        pass
-
-    def get_track_audio_features(self, _id: str, print_features_is_on=False):
-        features = self.__get_resource_request(
-            endpoint=f"audio-features/{_id}")
-        if print_features_is_on and len(features) > 3:
-            pprint(features)
-        return features
 
     # PLAYLISTS
     def create_new_playlist(self, name: str, user_id: str, is_public=True, description=None, is_collaborative=False):
@@ -326,7 +256,7 @@ class SpotifyAPI:
         playlist_content = self.get_playlist(playlist_id)
         playlist_description = playlist_content["description"]
         return playlist_description
-    
+
     def get_radio_station_from_playlist_description(self, playlist_id: str) -> str:
         playlist_description = self.get_playlist_description(playlist_id)
         # print(f"{playlist_description=}")
@@ -336,24 +266,6 @@ class SpotifyAPI:
         # print(f"{end_idx=}   {type(end_idx)}")
         playlist_name = playlist_description[start_idx+1:end_idx].strip()
         return playlist_name
-
-    def add_items_to_playlist(self, item_ids: list[str], playlist_id):
-        if not isinstance(item_ids[0], str):
-            raise Exception("item_ids must be a list containing only strings")
-        item_ids = [f"spotify:track:{id}" for id in item_ids]
-
-        data = json.dumps(item_ids)
-        url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
-        self.__post_request(url=url, data=data)
-
-    def get_playlist_items(self, playlist_id: str):
-        return self.__get_resource_request(endpoint=f"playlists/{playlist_id}/tracks")
-
-    def check_if_item_in_playlist(self, item_id: str, playlist_id: str):
-        playlist_items = self.get_playlist_items(playlist_id)
-        if item_id in playlist_items:
-            return True
-        return False
 
     def update_playlist_items(self, playlist_id: str, track_id_list: list[str]):
         tracks = [f"spotify:track:{id}" for id in track_id_list if id != None][-100:]   # takes the last 100 tracks (max defined by SpotifyAPI)
@@ -372,11 +284,7 @@ class SpotifyAPI:
             url_endpoint=url_endpoint, data=data, return_json=False)
         return request
 
-    # TODO: complete method
-    def remove_items_from_playlist(self, item_ids, playlist_id):
-        return
-
-    def check_if_user_has_playlist(self, user_id=user_id, playlist_id=None, playlist_name=None):
+    def check_if_user_has_playlist(self, user_id, playlist_id=None, playlist_name=None):
         users_playlists = self.get_users_playlistst(user_id=user_id)
         if playlist_id != None:
             keyword = "id"

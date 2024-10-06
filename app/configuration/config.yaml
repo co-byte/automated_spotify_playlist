@@ -1,0 +1,25 @@
+spotify:
+  playlist:
+    name: "Todays generated playlist"
+    description: "Queued station: {station_name} - Latest update: {date_val} @ {time_val} (GMT+2)"
+  api:
+    version: 'v1'
+    authorization:    
+      url: "https://accounts.spotify.com/authorize"
+      redirect_url: "https://github.com/co-byte?tab=repositories"
+      permissions: "ugc-image-upload+user-modify-playback-state+user-read-playback-state+user-read-currently-playing+user-follow-modify+user-follow-read+user-read-recently-played+user-read-playback-position+user-top-read+playlist-read-collaborative+playlist-modify-public+playlist-read-private+playlist-modify-private+app-remote-control+streaming+user-read-email+user-read-private+user-library-modify+user-library-read"
+      token_url: "https://accounts.spotify.com/api/token"
+
+radio_plus:
+  url: "wss://web-sock.radioplus.be/socket.io/?EIO=4&transport=websocket"
+  channels:
+    "radio1": 11
+    "radio2": 22
+    "klara": 31
+    "stubru": 41
+    "stubrudetijdloze": 44
+    "mnm": 55
+    "mnm r&beats": 57
+    "stubruhooray": 140
+    "stubrubruut": 141
+    "stubruuntz": 142

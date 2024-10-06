@@ -3,41 +3,31 @@ import datetime
 from urllib.parse import urlencode
 from pprint import pprint
 import json
-import os
+from typing import Callable
 
 import requests
 
 date_val = datetime.datetime.strftime(datetime.datetime.now(),"%Y-%m-%d")
-time_val = datetime.datetime.strftime(datetime.datetime.now(),"%H:%M:%S") 
+time_val = datetime.datetime.strftime(datetime.datetime.now(),"%H:%M:%S")
 
-class SpotifyAPI():
-    client_id = None
-    client_secret = None
+class SpotifyAPI:
     response_type = None
-    redirect_uri = None
-    state = None
-    scope = "ugc-image-upload+user-modify-playback-state+user-read-playback-state+\
-                user-read-currently-playing+user-follow-modify+user-follow-read+user-read-recently-played+\
-                user-read-playback-position+user-top-read+playlist-read-collaborative+playlist-modify-public+\
-                playlist-read-private+playlist-modify-private+app-remote-control+streaming+user-read-email+\
-                user-read-private+user-library-modify+user-library-read".replace(" ", "")
     access_token = None
-    refresh_token = None
     access_token_expires = datetime.datetime.now()
     access_token_did_expire = True
-    token_url = "https://accounts.spotify.com/api/token"
-    api_version = 'v1'
+    api_version = 'v1' #TODO: replace
     user_id = None
-    
-    def __init__(self, client_id, client_secret=None, client_refresh_token=None, response_type=None, redirect_uri=None, state=None, user_id=None, user_data_path = None,*args, **kwargs):
-        super().__init__(*args, **kwargs)
+
+    def __init__(self, client_id: str, client_secret: str, redirect_uri: str, scope: str, user_id :str, token_url: str, client_refresh_token: str, save_refresh_token_callback: Callable[[str], None]):
+        #TODO: replace countless args with simple config-like class
         self.client_id = client_id
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
-        self.state = state
+        self.scope = scope
         self.user_id = user_id
         self.refresh_token = client_refresh_token
-        self.user_data_path = user_data_path
+        self.token_url = token_url
+        self.export_refresh_token = save_refresh_token_callback
 
     # AUTHORIZATION HELP METHODS
     def __get_client_credentials(self):
@@ -67,8 +57,10 @@ class SpotifyAPI():
         self.access_token_did_expire = expires < now
         if "refresh_token" in token_data.keys():
             refresh_token = token_data["refresh_token"]
-            self.__write_json({"refresh_token": refresh_token},
-                      self.user_data_path)
+            self.__write_json(
+                {"refresh_token": refresh_token},
+                self.export_refresh_token(refresh_token)
+            )
             self.refresh_token = refresh_token
 
     @staticmethod
@@ -113,7 +105,7 @@ class SpotifyAPI():
                    "Content-Type": "application/x-www-form-urlencoded"
                    }
         url_body = {"grant_type": "refresh_token",
-                    "refresh_token": self.__load_json(self.user_data_path)["refresh_token"]
+                    "refresh_token": self.refresh_token
                     }
         request = requests.post(url=base_url, data=url_body, headers=headers)
         self.__handle_request_status(request)

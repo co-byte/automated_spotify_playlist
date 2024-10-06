@@ -1,45 +1,32 @@
 import asyncio
+from typing import Dict
 import websockets
 import json
 
 
-class RadioPlusAPI(object):
-    url = "wss://web-sock.radioplus.be/socket.io/?EIO=4&transport=websocket"
-    channel_name_and_id = {
-        "radio1": "11",
-        "radio2": "22",
-        "stubru": "41",
-        "klara": "31",
-        "stubrudetijdloze": "44",
-        "mnm": "55",
-        "mnm r&beats": "57",
-        "stubruhooray": "140",
-        "stubrubruut": "141",
-        "stubruuntz": "142"
-        }
+class RadioPlusAPI:
     playlist_data = None
     todays_programs = None
 
-    @staticmethod
-    async def extract_data(data):  
+    def __init__(self, url: str, channel_mapping: Dict[str, int]) -> None:
+        self.__url = url
+        self.__channels = channel_mapping
+        self.playlist_data = dict()
+
+    async def extract_data(self, data) -> bool:
         data = "[" + data[5:-2] + "]"
-        RadioPlusAPI.playlist_data = json.loads(data)     # consists of a list of dicts
+        self.playlist_data = json.loads(data)     # consists of a list of dicts
         return True
-    
-    @staticmethod
-    def turn_station_name_into_id(station_name:str):
-        #TODO Create a "handler"-function to check en fix given station names
+
+    def turn_station_name_into_id(self, station_name :str) -> int:
         station_name = station_name.lower().replace(" ","")
-        if station_name in RadioPlusAPI.channel_name_and_id:
-            id = RadioPlusAPI.channel_name_and_id[station_name]
-            # print(f"{id=}")
-            return id
+        if station_name in self.__channels:
+            return  self.__channels[station_name]
         print("no id could be found")
         return 0
 
-    @staticmethod
-    async def get_socket_data(station_id,date:int):
-        async with websockets.connect(RadioPlusAPI.url) as websocket:
+    async def get_socket_data(self, station_id,date:int):
+        async with websockets.connect(self.__url) as websocket:
             await websocket.recv()
 
             # TODO: PUT IN SEPERATE METHOD
@@ -56,25 +43,22 @@ class RadioPlusAPI(object):
             while received_data[:3] != "430":
                 received_data = await websocket.recv()
 
-            export_data = asyncio.create_task(RadioPlusAPI.extract_data(received_data))
+            export_data = asyncio.create_task(self.extract_data(received_data))
             await export_data
             return True
-    
-    @staticmethod
-    def get_daily_playlists(station_id = "41",date=0):
-        asyncio.run(RadioPlusAPI.get_socket_data(station_id,date=date))
 
-    @staticmethod
-    def export_daily_playlist(station_id = "41"):
+    def get_daily_playlists(self, station_id = "41",date=0):
+        asyncio.run(self.get_socket_data(station_id,date=date))
+
+    def export_daily_playlist(self, station_id = "41"):
         query = []
-        RadioPlusAPI.todays_programs = []
-        for program in RadioPlusAPI.playlist_data:
-            RadioPlusAPI.todays_programs.append(program["name"])
+        todays_programs = []
+        for program in self.playlist_data:
+            todays_programs.append(program["name"])
             if "playlist" in program.keys():
                 for track in program["playlist"]:
                     name = track['title'].replace("'","")
                     artist = track['artist']
-                    query.append(f"{name} {track['artist']}")
+                    query.append(f"{name} {artist}")
         return query
-
        

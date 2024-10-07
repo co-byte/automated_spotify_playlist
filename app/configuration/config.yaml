@@ -6,7 +6,7 @@ spotify:
     version: 'v1'
     authorization:    
       url: "https://accounts.spotify.com/authorize"
-      redirect_url: "https://github.com/co-byte"
+      redirect_url: "http://localhost:5000/users/authorization/redirect"
       permissions: "ugc-image-upload playlist-modify-public"
       token_url: "https://accounts.spotify.com/api/token"
 

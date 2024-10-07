@@ -20,7 +20,7 @@ class Tokens:
 
 @dataclass
 class AccessToken:
-    token_value: str
+    token: str
     scope: str # Space-separated list of scopes the access token is valid for
     token_type: str
     expires_in: int
@@ -32,7 +32,7 @@ class AccessToken:
     @classmethod
     def from_dict(cls, data: dict[str,any]) -> AccessToken:
         return cls(
-            token_value=data["access_token"],
+            token=data["access_token"],
             scope=data["scope"],
             token_type=data["token_type"],
             expires_in=data["expires_in"],
@@ -40,10 +40,10 @@ class AccessToken:
 
     def validate(self):
         """Validates the token response fields."""
-        if not self.token_value:
+        if not self.token:
             raise ValueError("Access token must not be empty.")
         if self.expires_in <= 0:
             raise ValueError("Expires_in must be greater than zero.")
 
     def __str__(self) -> str:
-        return self.token_value
+        return self.token

@@ -10,6 +10,7 @@ class Environment:
     spotify_client_id: str = None
     spotify_client_secret: str = None
     spotify_client_refresh_token: str = None
+    spotify_temp_user_auth_code: str = None
 
     def __str__(self):
         # Mask sensitive information

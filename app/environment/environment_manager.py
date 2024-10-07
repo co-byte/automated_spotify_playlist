@@ -14,7 +14,8 @@ class EnvironmentManager:
             spotify_client_secret=os.getenv("SPOTIFY_CLIENT_SECRET"),
             spotify_client_refresh_token=os.getenv("SPOTIFY_CLIENT_REFRESH_TOKEN"),
             spotify_user_id=os.getenv("SPOTIFY_USER_ID"),
-            config_file=os.getenv("CONFIG_FILE")
+            config_file=os.getenv("CONFIG_FILE"),
+            spotify_temp_user_auth_code=os.getenv("TEMP_USER_AUTH_CODE")
         )
 
     def update_refresh_token(self, new_token_value: str) -> None:

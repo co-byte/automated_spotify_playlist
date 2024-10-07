@@ -18,6 +18,7 @@ client_id = env.spotify_client_id
 client_secret = env.spotify_client_secret
 client_refresh_token = env.spotify_client_refresh_token
 redirect_uri = cfg.spotify_config.api.authorization.redirect_url
+api_version = cfg.spotify_config.api.version
 user_id = env.spotify_user_id
 token_url = cfg.spotify_config.api.authorization.token_url
 selected_playlist_name = cfg.spotify_config.playlist.name
@@ -27,6 +28,7 @@ def update_playlist():
     spotify = SpotifyAPI(client_id=client_id,
                          client_secret=client_secret,
                          redirect_uri=redirect_uri,
+                         api_version=api_version,
                          scope=scope,
                          user_id=user_id,
                          token_url=token_url,

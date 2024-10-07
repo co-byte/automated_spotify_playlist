@@ -54,8 +54,8 @@ class ConfigParser:
         """Parse the RadioPlus configuration section from the YAML data."""
         try:
             return RadioPlusConfig(
-                url=cfg["radioplus"]["url"],
-                channels=cfg["radioplus"]["channels"]
+                url=cfg["radio_plus"]["url"],
+                channels=cfg["radio_plus"]["channels"]
             )
         except KeyError as e:
             raise KeyError(f"Missing key in RadioPlus configuration data: {e}") from e

@@ -3,11 +3,13 @@ from dataclasses import dataclass
 
 @dataclass
 class Environment:
-    spotify_client_id: str
-    spotify_client_secret: str
-    spotify_client_refresh_token: str
     spotify_user_id: str
     config_file: str
+    
+    # Authentication data for the Spotify API
+    spotify_client_id: str = None
+    spotify_client_secret: str = None
+    spotify_client_refresh_token: str = None
 
     def __str__(self):
         # Mask sensitive information

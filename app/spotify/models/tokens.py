@@ -46,4 +46,4 @@ class AccessToken:
             raise ValueError("Expires_in must be greater than zero.")
 
     def __str__(self) -> str:
-        return self.token
+        return f"{self.token[:4]}****"

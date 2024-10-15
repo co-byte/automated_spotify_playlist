@@ -1,30 +1,42 @@
+import asyncio
 from datetime import datetime
 
+from app.environment.environment import Environment
 from app.environment.environment_manager import EnvironmentManager
 from app.configuration.config_parser import ConfigParser
-from radio_plus.radio_plus_module import RadioPlusAPI
-from spotify.spotify_module import SpotifyAPI
+from app.radio_plus.radio_plus_module import RadioPlusAPI
+from app.spotify.authorization.authorization_manager_config import AuthorizationManagerConfig
+from app.spotify.spotify_module import SpotifyAPI
+from app.spotify.authorization.authorization_manager import AuthorizationManager
 
 
-# Load environment variables and configurations
-env = EnvironmentManager().load_from_env()
-cfg = ConfigParser(env.config_file).load_config()
+async def setup_authorization(spotify_client_id: str, spotify_client_secret: str, config_manager: ConfigParser) -> AuthorizationManager:
+    auth_config = AuthorizationManagerConfig(
+            spotify_client_id,
+            spotify_client_secret,
+            config_manager.spotify_config.api.authorization.url,
+            config_manager.spotify_config.api.authorization.token_url,
+            config_manager.spotify_config.api.authorization.redirect_url,
+            config_manager.spotify_config.api.authorization.permissions
+        )
+    auth_manager = AuthorizationManager(auth_config)
+    return auth_manager
 
-# Retrieve datetime of latest playlist update
-date_val = datetime.strftime(datetime.now(),"%Y-%m-%d")
-time_val = datetime.strftime(datetime.now(),"%H:%M:%S")
+async def update_playlist(env: Environment, cfg: ConfigParser):
+    # Retrieve datetime of latest playlist update
+    date_val = datetime.strftime(datetime.now(),"%Y-%m-%d")
+    time_val = datetime.strftime(datetime.now(),"%H:%M:%S")
 
-client_id = env.spotify_client_id
-client_secret = env.spotify_client_secret
-client_refresh_token = env.spotify_client_refresh_token
-redirect_uri = cfg.spotify_config.api.authorization.redirect_url
-api_version = cfg.spotify_config.api.version
-user_id = env.spotify_user_id
-token_url = cfg.spotify_config.api.authorization.token_url
-selected_playlist_name = cfg.spotify_config.playlist.name
-scope = cfg.spotify_config.api.authorization.permissions
+    client_id = env.spotify_client_id
+    client_secret = env.spotify_client_secret
+    client_refresh_token = env.spotify_client_refresh_token
+    redirect_uri = cfg.spotify_config.api.authorization.redirect_url
+    api_version = cfg.spotify_config.api.version
+    user_id = env.spotify_user_id
+    token_url = cfg.spotify_config.api.authorization.token_url
+    selected_playlist_name = cfg.spotify_config.playlist.name
+    scope = cfg.spotify_config.api.authorization.permissions
 
-def update_playlist():
     spotify = SpotifyAPI(client_id=client_id,
                          client_secret=client_secret,
                          redirect_uri=redirect_uri,
@@ -35,12 +47,12 @@ def update_playlist():
                          client_refresh_token=client_refresh_token,
                          save_refresh_token_callback=EnvironmentManager.update_refresh_token
                          )
-    
+
     radioplus = RadioPlusAPI(
         url=cfg.radioplus_config.url,
         channel_mapping=cfg.radioplus_config.channels
     )
-    
+
     selected_playlist_id = spotify.get_playlist_id(playlist_name=selected_playlist_name,
                                                    user_id=user_id
                                                    )
@@ -60,10 +72,18 @@ def update_playlist():
     print(f"{todays_query=}")
     return todays_query
 
-if __name__ == "__main__":
-    played_tracks = update_playlist()
+async def main():
+    # Load environment variables and configurations
+    env_manager = EnvironmentManager()
+    env = env_manager.load_from_env()
+    cfg = ConfigParser(env.config_file).load_config()
+    auth_manager = await setup_authorization(
+        env.spotify_client_id,
+        env.spotify_client_secret,
+        cfg
+        )
+    print(f"main - Access_token: {await auth_manager.access_token}")
+    # played_tracks = await update_playlist(env, cfg)
 
-    try_count = 0
-    while(try_count < 3 and not played_tracks):
-        played_tracks = update_playlist
-        try_count+=1
+if __name__ == "__main__":
+    asyncio.run(main())

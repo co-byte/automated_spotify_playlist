@@ -6,8 +6,8 @@ spotify:
     version: 'v1'
     authorization:    
       url: "https://accounts.spotify.com/authorize"
-      redirect_url: "https://github.com/co-byte?tab=repositories"
-      permissions: "ugc-image-upload+user-modify-playback-state+user-read-playback-state+user-read-currently-playing+user-follow-modify+user-follow-read+user-read-recently-played+user-read-playback-position+user-top-read+playlist-read-collaborative+playlist-modify-public+playlist-read-private+playlist-modify-private+app-remote-control+streaming+user-read-email+user-read-private+user-library-modify+user-library-read"
+      redirect_url: "http://localhost:5000/users/authorization/redirect"
+      permissions: "ugc-image-upload playlist-modify-public"
       token_url: "https://accounts.spotify.com/api/token"
 
 radio_plus:

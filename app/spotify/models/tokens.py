@@ -10,7 +10,7 @@ class Tokens:
     def from_dict(cls, data: dict[str, any]) -> Tokens:
         return cls(
             access_token = AccessToken.from_dict(data),
-            refresh_token = data["refresh_token"]
+            refresh_token = data.get("refresh_token")
         )
 
     def update(self, new_tokens: Tokens) -> None:

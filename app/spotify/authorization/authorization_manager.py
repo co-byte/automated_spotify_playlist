@@ -2,17 +2,12 @@ import base64
 import secrets
 import urllib.parse
 import webbrowser
-import asyncio
 from typing import Callable, Dict, Optional
 
 import httpx
-import uvicorn
-from fastapi import FastAPI
 
 from app.spotify.authorization.authorization_manager_config import AuthorizationManagerConfig
-from app.spotify.authorization.authorization_server import AuthorizationServer
 from app.spotify.models.tokens import Tokens
-
 
 # Static values dictated by the Spotify API docs
 TOKEN_REQUEST_CONTENT_TYPE = 'application/x-www-form-urlencoded'
@@ -28,6 +23,11 @@ class AuthorizationManager:
             )
         self.get_auth_code_from_server = get_auth_code_from_server
         self.__config = config
+
+    async def authorized_request(self, function: Callable): #TODO: complete this wrapper function
+        def wrap(*args, **kwargs):
+            return function(*args, **kwargs)
+        return wrap
 
     async def get_access_token(self):
         """Ensures tokens are up-to-date and returns the latest access_token"""
@@ -74,7 +74,7 @@ class AuthorizationManager:
             "redirect_uri": self.__config.redirect_url
         }
         return await self.__send_token_request(parameters)
-    
+
     # Simpler token request when a refresh_token is registered
     async def __refresh_tokens(self) -> Tokens:
         """Requests a new access and possibly refresh token using a saved refresh token."""
@@ -108,43 +108,3 @@ class AuthorizationManager:
 
     def __base_64_encode(self, text: str) -> str:
         return base64.b64encode(text.encode()).decode() # str -> bytes -> b64_bytes -> b64_str
-
-
-if __name__ == "__main__":
-    from app.configuration.config_parser import ConfigParser
-    from app.environment.environment_manager import EnvironmentManager
-
-    async def main():
-        env = EnvironmentManager("app\\environment\\.env").load_from_env()
-        cfg = ConfigParser(env.config_file).load_config()
-
-        auth_server_config = uvicorn.Config(
-            FastAPI(),
-            host="localhost",
-            port=5000,
-            log_level="critical"  # Don't use automatic logging
-        )
-        auth_server = AuthorizationServer(auth_server_config)
-        
-        auth_config = AuthorizationManagerConfig(
-            env.spotify_client_id,
-            env.spotify_client_secret,
-            cfg.spotify_config.api.authorization.url,
-            cfg.spotify_config.api.authorization.token_url,
-            cfg.spotify_config.api.authorization.redirect_url,
-            cfg.spotify_config.api.authorization.permissions
-        )
-        auth_manager = AuthorizationManager(
-            auth_config,
-            auth_server.get_authorization_code
-            )
-
-        # Await the access_token if it's an async property
-        access_token = await auth_manager.get_access_token()
-        print(f"main - Access_token: {access_token}")
-
-        print("\nmain - Clearing access_token & refetching it...\n")
-        access_token = await auth_manager.get_access_token()
-        print(f"main - Access_token: {access_token}")
-
-    asyncio.run(main())  # Run the async main function

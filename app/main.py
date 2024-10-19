@@ -13,7 +13,10 @@ from app.spotify.authorization.authorization_manager_config import Authorization
 from app.spotify.authorization.authorization_server import AuthorizationServer
 from app.spotify.spotify_module import SpotifyAPI
 from app.spotify.authorization.authorization_manager import AuthorizationManager
+from app.logging.logger import get_logger
 
+
+logger = get_logger(__name__)
 
 async def setup_spotify_authorization(spotify_client_id: str, spotify_client_secret: str, spotify_config: SpotifyConfig, get_auth_code_from_server: Callable[[str], str]) -> AuthorizationManager:
     auth_config = AuthorizationManagerConfig(
@@ -96,14 +99,7 @@ async def main():
     #     auth_manager.get_access_token
     #     )
 
-    print(f"main - Access_token: {await auth_manager.get_access_token()}")
-    print("\n2)\n")
-    print(f"main - Access_token: {await auth_manager.get_access_token()}")
-    print("\n3)\n")
-    auth_manager.clear_access_token()
-    print(f"main - Access_token: {await auth_manager.get_access_token()}")
-
-    # print(f"main - Played tracks: {played_tracks}")
-
+    await auth_manager.get_access_token()
+    
 if __name__ == "__main__":
     asyncio.run(main())

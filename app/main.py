@@ -98,8 +98,6 @@ async def main():
     #     cfg.radioplus_config.channels,
     #     auth_manager.get_access_token
     #     )
-
-    await auth_manager.get_access_token()
     
 if __name__ == "__main__":
     asyncio.run(main())

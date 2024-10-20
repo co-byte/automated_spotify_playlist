@@ -7,7 +7,7 @@ from typing import Callable, Dict, Optional
 import httpx
 
 from app.spotify.authorization.authorization_manager_config import AuthorizationManagerConfig
-from app.spotify.models.tokens import AccessToken, Tokens
+from app.spotify.authorization.tokens import AccessToken, Tokens
 from app.logging.logger import get_logger
 
 

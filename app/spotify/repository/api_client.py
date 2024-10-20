@@ -2,16 +2,14 @@ from enum import Enum
 import urllib
 import urllib.parse
 import httpx
-from typing import Optional, Dict, Any
-from abc import ABC
+from typing import Callable, Optional, Dict, Any
 
-from app.spotify.authorization.authorization_manager import AuthorizationManager
 from app.logging.logger import get_logger
-from app.spotify.requests.spotify_request_config import SpotifyRequestConfig
+from app.spotify.repository.requests.base.request_config import RequestConfig
 
 logger = get_logger(__name__)
 
-class SpotifyRequest(ABC):
+class SpotifyApiClient:
     """Handles requests to the Spotify API with authorization handling."""
 
     class __RequestMethod(Enum):
@@ -20,12 +18,12 @@ class SpotifyRequest(ABC):
         PUT = "PUT"
         DELETE = "DELETE"
 
-    def __init__(self, config: SpotifyRequestConfig, auth_manager: AuthorizationManager):
-        self.base_url = f"{config.base_address}/{config.api_version}"
-        self.__auth_manager = auth_manager
+    def __init__(self, config: RequestConfig, get_authorization_headers: Callable[[],httpx.Headers]):
+        self.__base_url = f"{config.base_address}/{config.api_version}"
+        self.__get_authorization_headers = get_authorization_headers
 
     def __build_url(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> httpx.URL:
-        url = f"{self.base_url}/{endpoint}"
+        url = f"{self.__base_url}/{endpoint}"
         if params:
             url += f"?{urllib.parse.urlencode(params)}"
         return httpx.URL(url)
@@ -34,7 +32,7 @@ class SpotifyRequest(ABC):
         if not additional_headers:
             additional_headers: Dict[str, str] = {}
 
-        auth_headers = self.__auth_manager.build_authorization_headers()
+        auth_headers = self.__get_authorization_headers
 
         # Merge headers and give priority to authorization headers
         return {**additional_headers, **auth_headers}
@@ -122,7 +120,7 @@ class SpotifyRequest(ABC):
             )
             raise  # Re-raise any unexpected exceptions
 
-    async def _get(self, endpoint: str, params: Optional[Dict[str, Any]] = None, headers: Optional[Dict[str, str]] = None) -> dict:
+    async def get(self, endpoint: str, params: Optional[Dict[str, Any]] = None, headers: Optional[Dict[str, str]] = None) -> dict:
         return await self.__request(
             method=self.__RequestMethod.GET,
             endpoint=endpoint,
@@ -130,7 +128,7 @@ class SpotifyRequest(ABC):
             headers=headers
         )
 
-    async def _post(self, endpoint: str, json_body: Dict[str, Any], headers: Optional[Dict[str, str]] = None) -> dict:
+    async def post(self, endpoint: str, json_body: Dict[str, Any], headers: Optional[Dict[str, str]] = None) -> dict:
         return await self.__request(
             method=self.__RequestMethod.POST,
             endpoint=endpoint,
@@ -138,7 +136,7 @@ class SpotifyRequest(ABC):
             json_body=json_body
         )
 
-    async def _put(self, endpoint: str, json_body: Dict[str, Any], headers: Optional[Dict[str, str]] = None) -> dict:
+    async def put(self, endpoint: str, json_body: Dict[str, Any], headers: Optional[Dict[str, str]] = None) -> dict:
         return await self.__request(
             method=self.__RequestMethod.PUT,
             endpoint=endpoint,
@@ -146,7 +144,7 @@ class SpotifyRequest(ABC):
             json_body=json_body
         )
 
-    async def _delete(self, endpoint: str, params: Optional[Dict[str, Any]] = None, headers: Optional[Dict[str, str]] = None) -> dict:
+    async def delete(self, endpoint: str, params: Optional[Dict[str, Any]] = None, headers: Optional[Dict[str, str]] = None) -> dict:
         return await self.__request(
             method=self.__RequestMethod.DELETE,
             endpoint=endpoint,

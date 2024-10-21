@@ -11,6 +11,9 @@ from app.configuration.config_parser import ConfigParser
 from app.radio_plus.radio_plus_module import RadioPlusAPI
 from app.spotify.authorization.authorization_manager_config import AuthorizationManagerConfig
 from app.spotify.authorization.authorization_server import AuthorizationServer
+from app.spotify.requests.api_client import SpotifyApiClient
+from app.spotify.requests.repository.base.request_config import RequestConfig
+from app.spotify.requests.repository.track_request_handler import TrackRequestHandler
 from app.spotify.spotify_module import SpotifyAPI
 from app.spotify.authorization.authorization_manager import AuthorizationManager
 from app.logging.logger import get_logger
@@ -90,7 +93,19 @@ async def main():
         cfg.spotify_config,
         auth_server.get_authorization_code
         )
+    await auth_manager.build_authorization_headers()
+    auth_manager.clear_access_token()
 
+    request_cfg = RequestConfig()
+    api_client = SpotifyApiClient(
+        request_cfg,
+        auth_manager.build_authorization_headers
+        )
+    track_request_handler = TrackRequestHandler(api_client)
+    x = await track_request_handler.get_track("0JrWGOnyTh9BMdlSZaHGwF")
+
+    logger.critical(x)
+    logger.critical("End of program.")
     # played_tracks = await update_playlist(
     #     env.spotify_user_id,
     #     cfg.spotify_config.playlist.name,

@@ -2,15 +2,15 @@ from enum import Enum
 import urllib
 import urllib.parse
 import httpx
-from typing import Callable, Optional, Dict, Any
+from typing import Callable, Coroutine, Optional, Dict, Any
 
 from app.logging.logger import get_logger
-from app.spotify.repository.requests.base.request_config import RequestConfig
+from app.spotify.requests.repository.base.request_config import RequestConfig
 
 logger = get_logger(__name__)
 
 class SpotifyApiClient:
-    """Handles requests to the Spotify API with authorization handling."""
+    """Provides CRUD operations for the Spotify API with authorization support."""
 
     class __RequestMethod(Enum):
         GET = "GET"
@@ -18,7 +18,7 @@ class SpotifyApiClient:
         PUT = "PUT"
         DELETE = "DELETE"
 
-    def __init__(self, config: RequestConfig, get_authorization_headers: Callable[[],httpx.Headers]):
+    def __init__(self, config: RequestConfig, get_authorization_headers: Coroutine[Any, Any, httpx.Headers]):
         self.__base_url = f"{config.base_address}/{config.api_version}"
         self.__get_authorization_headers = get_authorization_headers
 
@@ -32,7 +32,7 @@ class SpotifyApiClient:
         if not additional_headers:
             additional_headers: Dict[str, str] = {}
 
-        auth_headers = self.__get_authorization_headers
+        auth_headers = await self.__get_authorization_headers()
 
         # Merge headers and give priority to authorization headers
         return {**additional_headers, **auth_headers}

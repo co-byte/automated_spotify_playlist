@@ -4,6 +4,7 @@ from app.spotify.requests.models.track.track import Track
 from app.spotify.requests.repository.base.request_handler import SpotifyRequestHandler
 from app.logging.logger import get_logger
 
+
 logger = get_logger(__name__)
 
 class TrackRequestHandler(SpotifyRequestHandler):

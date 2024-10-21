@@ -31,7 +31,7 @@ class AuthorizationManager:
 
     async def build_authorization_headers(self) -> httpx.Headers:
         access_token = await self.__get_access_token()  # Await the async method
-        authorization_header = self.__build_authorization_header(access_token)
+        authorization_header = httpx.Headers(self.__build_authorization_header(access_token.token))
         return authorization_header
 
     async def __get_access_token(self) -> AccessToken:
@@ -114,7 +114,9 @@ class AuthorizationManager:
             "refresh_token": self.__tokens.refresh_token
         }
         try:
-            return await self.__send_token_request(parameters)
+            tokens = await self.__send_token_request(parameters)
+            logger.critical("New tokens received: %s", tokens)
+            return tokens
         except httpx.HTTPStatusError as e:
             logger.error("Error during token refresh attempt: %s", e)
             raise ValueError(f"Unable to renew tokens using refresh token {self.__tokens.refresh_token}") from e

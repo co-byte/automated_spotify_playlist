@@ -43,7 +43,6 @@ class AuthorizationServer:
         Returns this code once it's received and shuts down the server.
         """
         self.__synchronization_state = synchronization_state
-        logger.debug("Synchronization state set: %s", synchronization_state)
 
         # Initialize the Uvicorn server with the configuration
         server = uvicorn.Server(self.__config)
@@ -88,7 +87,6 @@ class AuthorizationServer:
 
     async def __start_server(self, server: uvicorn.Server) -> None:
         try:
-            logger.info("Starting up authorization redirect web server.")
             await server.serve()
         except Exception as e:
             logger.error("Error starting the authorization server: %s", str(e))

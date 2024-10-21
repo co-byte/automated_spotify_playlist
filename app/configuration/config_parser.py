@@ -32,20 +32,25 @@ class ConfigParser:
     def __parse_spotify_config(self, cfg: Any) -> SpotifyConfig:
         """Parse the Spotify configuration section from the YAML data."""
         try:
+            playlist_config = cfg["spotify"]["playlist"]
             playlist = Playlist(
-                name=cfg["spotify"]["playlist"]["name"],
-                description=cfg["spotify"]["playlist"]["description"]
+                name=playlist_config["name"],
+                description=playlist_config["description"]
             )
+
+            auth_config = cfg["spotify"]["api"]["authorization"]
             authorization = Authorization(
-                url=cfg["spotify"]["api"]["authorization"]["url"],
-                redirect_url=cfg["spotify"]["api"]["authorization"]["redirect_url"],
-                permissions=cfg["spotify"]["api"]["authorization"]["permissions"],
-                token_url=cfg["spotify"]["api"]["authorization"]["token_url"]
+                url=auth_config["url"],
+                redirect_url=auth_config["redirect_url"],
+                permissions=auth_config["permissions"],
+                token_url=auth_config["token_url"]
             )
+
             api = Api(
                 version=cfg["spotify"]["api"]["version"],
                 authorization=authorization
             )
+
             return SpotifyConfig(playlist=playlist, api=api)
         except KeyError as e:
             raise KeyError(f"Missing key in Spotify configuration data: {e}") from e

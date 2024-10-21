@@ -1,7 +1,8 @@
 from typing import Dict, List
 
+from app.spotify.requests.api_client import ApiClient
 from app.spotify.requests.models.track.track import Track
-from app.spotify.requests.repository.base.request_handler import SpotifyRequestHandler
+from app.spotify.requests.repository.base_handler import SpotifyRequestHandler
 from app.logging.logger import get_logger
 
 
@@ -12,14 +13,14 @@ class TrackRequestHandler(SpotifyRequestHandler):
 
     __ENDPOINT = "tracks"
 
-    def __init__(self, api_client):
-        super().__init__(api_client, self.__ENDPOINT)
+    def __init__(self, api_client: ApiClient):
+        super().__init__(api_client)
 
     async def get_track(self, track_id: str) -> Track:
         endpoint = f"{self.__ENDPOINT}/{track_id}"
-        
+
         logger.debug("Fetching track data from endpoint: %s", endpoint)
-        
+
         try:
             track_data = await self._api_client.get(endpoint)
             track = Track.from_dict(track_data)
@@ -32,7 +33,7 @@ class TrackRequestHandler(SpotifyRequestHandler):
     async def get_tracks(self, track_ids: List[str]) -> List[Track]:
         response_object_key = "tracks"
         url_params = {"ids": ",".join(track_ids)}  # Comma-separated IDs
-        
+
         logger.debug("Preparing to fetch tracks from endpoint: %s with parameters: %s", self.__ENDPOINT, url_params)
 
         try:

@@ -5,11 +5,11 @@ import httpx
 from typing import Coroutine, Optional, Dict, Any
 
 from app.logging.logger import get_logger
-from app.spotify.requests.repository.base.request_handler_config import RequestConfig
+from app.spotify.requests.api_client_config import ApiClientConfig
 
 logger = get_logger(__name__)
 
-class SpotifyApiClient:
+class ApiClient:
     """Provides CRUD operations for the Spotify API with authorization support."""
 
     class __RequestMethod(Enum):
@@ -18,7 +18,7 @@ class SpotifyApiClient:
         PUT = "PUT"
         DELETE = "DELETE"
 
-    def __init__(self, config: RequestConfig, get_authorization_headers: Coroutine[Any, Any, httpx.Headers]):
+    def __init__(self, config: ApiClientConfig, get_authorization_headers: Coroutine[Any, Any, httpx.Headers]):
         self.__base_url = f"{config.base_address}/{config.api_version}"
         self.__get_authorization_headers = get_authorization_headers
 

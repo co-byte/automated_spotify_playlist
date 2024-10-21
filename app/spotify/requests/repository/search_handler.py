@@ -1,8 +1,9 @@
 from typing import List, Dict
 
+from app.spotify.requests.api_client import ApiClient
 from app.spotify.requests.models.search_response import SearchResponse
 from app.spotify.requests.models.track.simplified_track import SimplifiedTrack
-from app.spotify.requests.repository.base.request_handler import SpotifyRequestHandler
+from app.spotify.requests.repository.base_handler import SpotifyRequestHandler
 from app.logging.logger import get_logger
 
 
@@ -13,9 +14,8 @@ class SearchRequestHandler(SpotifyRequestHandler):
 
     __ENDPOINT = "search"
 
-    def __init__(self, api_client):
-        """Initialize the search handler with an API client."""
-        super().__init__(api_client, self.__ENDPOINT)
+    def __init__(self, api_client: ApiClient):
+        super().__init__(api_client)
 
     async def __search(self, query: str, search_type: str, limit: int = 20, offset: int = 0) -> Dict[str, str]:
         params = {
@@ -40,7 +40,10 @@ class SearchRequestHandler(SpotifyRequestHandler):
         search_type = "track"
         result_limit = 1
 
-        logger.debug("Initiating track search for track: '%s' by artist: '%s'", track_name, artist_name)
+        logger.debug(
+            "Initiating track search for track: '%s' by artist: '%s'", 
+            track_name, artist_name
+            )
 
         try:
             response = await self.__search(query=query, search_type=search_type, limit=result_limit)
@@ -54,5 +57,8 @@ class SearchRequestHandler(SpotifyRequestHandler):
 
             return tracks
         except Exception as e:
-            logger.error("Track search failed for track: '%s' by artist: '%s': %s", track_name, artist_name, str(e))
+            logger.error(
+                "Track search failed for track: '%s' by artist: '%s': %s", 
+                track_name, artist_name, str(e)
+                )
             raise

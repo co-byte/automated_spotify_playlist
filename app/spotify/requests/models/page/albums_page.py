@@ -12,8 +12,14 @@ from app.spotify.requests.models.page.page import Page
 class AlbumsPage(Page[SimplifiedAlbum]):
 
     def __init__(
-        self, href: HttpUrl, limit: int, next_: Optional[HttpUrl], offset: int,
-        previous: Optional[HttpUrl], total: int, items: List[SimplifiedAlbum]
+        self,
+        href: HttpUrl,
+        limit: int,
+        next_: Optional[HttpUrl],
+        offset: int,
+        previous: Optional[HttpUrl],
+        total: int,
+        items: List[SimplifiedAlbum]
         ) -> None:
         super().__init__(href, limit, next_, offset, previous, total, items)
 

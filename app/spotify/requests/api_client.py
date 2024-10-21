@@ -2,10 +2,10 @@ from enum import Enum
 import urllib
 import urllib.parse
 import httpx
-from typing import Callable, Coroutine, Optional, Dict, Any
+from typing import Coroutine, Optional, Dict, Any
 
 from app.logging.logger import get_logger
-from app.spotify.requests.repository.base.request_config import RequestConfig
+from app.spotify.requests.repository.base.request_handler_config import RequestConfig
 
 logger = get_logger(__name__)
 

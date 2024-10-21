@@ -12,7 +12,8 @@ from app.radio_plus.radio_plus_module import RadioPlusAPI
 from app.spotify.authorization.authorization_manager_config import AuthorizationManagerConfig
 from app.spotify.authorization.authorization_server import AuthorizationServer
 from app.spotify.requests.api_client import SpotifyApiClient
-from app.spotify.requests.repository.base.request_config import RequestConfig
+from app.spotify.requests.repository.base.request_handler_config import RequestConfig
+from app.spotify.requests.repository.search_request_handler import SearchRequestHandler
 from app.spotify.requests.repository.track_request_handler import TrackRequestHandler
 from app.spotify.spotify_module import SpotifyAPI
 from app.spotify.authorization.authorization_manager import AuthorizationManager
@@ -93,8 +94,6 @@ async def main():
         cfg.spotify_config,
         auth_server.get_authorization_code
         )
-    await auth_manager.build_authorization_headers()
-    auth_manager.clear_access_token()
 
     request_cfg = RequestConfig()
     api_client = SpotifyApiClient(
@@ -102,17 +101,15 @@ async def main():
         auth_manager.build_authorization_headers
         )
     track_request_handler = TrackRequestHandler(api_client)
-    x = await track_request_handler.get_track("0JrWGOnyTh9BMdlSZaHGwF")
+    tracks = await track_request_handler.get_tracks(["0JrWGOnyTh9BMdlSZaHGwF","0JrWGOnyTh9BMdlSZaHGwF"])
 
-    logger.critical(x)
+    first_track = tracks[0].name
+    logger.info("First track: %s", first_track)
+
+    search_request_handler = SearchRequestHandler(api_client)
+    tracks = await search_request_handler.search_track("The power of Love", "Huey Lewis & The News")
+    logger.info(tracks[0].uri)
     logger.critical("End of program.")
-    # played_tracks = await update_playlist(
-    #     env.spotify_user_id,
-    #     cfg.spotify_config.playlist.name,
-    #     cfg.radioplus_config.url,
-    #     cfg.radioplus_config.channels,
-    #     auth_manager.get_access_token
-    #     )
-    
+
 if __name__ == "__main__":
     asyncio.run(main())

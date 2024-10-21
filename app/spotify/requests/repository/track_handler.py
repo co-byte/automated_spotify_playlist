@@ -1,6 +1,6 @@
 from typing import Dict, List
 
-from app.spotify.requests.api_client import ApiClient
+from app.spotify.requests.repository.api_client.api_client import ApiClient
 from app.spotify.requests.models.track.track import Track
 from app.spotify.requests.repository.base_handler import SpotifyRequestHandler
 from app.logging.logger import get_logger
@@ -8,7 +8,7 @@ from app.logging.logger import get_logger
 
 logger = get_logger(__name__)
 
-class TrackRequestHandler(SpotifyRequestHandler):
+class TrackHandler(SpotifyRequestHandler):
     """Handles Spotify API requests related to tracks."""
 
     __ENDPOINT = "tracks"

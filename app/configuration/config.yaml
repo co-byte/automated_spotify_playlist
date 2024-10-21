@@ -7,7 +7,7 @@ spotify:
     authorization:    
       url: "https://accounts.spotify.com/authorize"
       redirect_url: "http://localhost:5000/users/authorization/redirect"
-      permissions: "ugc-image-upload playlist-modify-public"
+      permissions: "ugc-image-upload playlist-modify-public playlist-read-private"
       token_url: "https://accounts.spotify.com/api/token"
 
 radio_plus:

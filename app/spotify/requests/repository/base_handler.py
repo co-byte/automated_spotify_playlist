@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from app.spotify.requests.api_client import ApiClient
+
+from app.spotify.requests.repository.api_client.api_client import ApiClient
 
 
 class SpotifyRequestHandler(ABC):

@@ -5,7 +5,8 @@ import httpx
 from typing import Coroutine, Optional, Dict, Any
 
 from app.logging.logger import get_logger
-from app.spotify.requests.api_client_config import ApiClientConfig
+from app.spotify.requests.repository.api_client.api_client_config import ApiClientConfig
+
 
 logger = get_logger(__name__)
 

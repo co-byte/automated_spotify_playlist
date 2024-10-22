@@ -6,19 +6,19 @@ from pydantic import Field
 
 from app.spotify.requests.models.album.simplified_album import SimplifiedAlbum
 from app.spotify.requests.models.external import ExternalIds
-from app.spotify.requests.models.track.simplified_track import SimplifiedTrack
+from app.spotify.requests.models.track.simplified_track import SimplifiedSpotifyTrack
 
 
 @dataclass
-class Track(SimplifiedTrack):
+class SpotifyTrack(SimplifiedSpotifyTrack):
     album: SimplifiedAlbum
     external_ids: ExternalIds
     popularity: Annotated[int, Field(ge=0, le=100)]
 
     @classmethod
-    def from_dict(cls, data: Dict[str, any]) -> Track:
+    def from_dict(cls, data: Dict[str, any]) -> SpotifyTrack:
         # Call the superclass from_dict to populate the base class attributes
-        base_attributes = SimplifiedTrack.from_dict(data)
+        base_attributes = SimplifiedSpotifyTrack.from_dict(data)
 
         return cls(
             **base_attributes.__dict__,  # Unpack base attributes

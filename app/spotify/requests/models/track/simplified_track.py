@@ -36,7 +36,7 @@ class LinkedFrom:
         }
 
 @dataclass
-class SimplifiedTrack:
+class SimplifiedSpotifyTrack:
     # 1. Identifiers & Basic Info
     id: str
     name: str
@@ -65,7 +65,7 @@ class SimplifiedTrack:
     linked_from: Optional[LinkedFrom]
 
     @classmethod
-    def from_dict(cls, data: Dict[str, str]) -> SimplifiedTrack:
+    def from_dict(cls, data: Dict[str, str]) -> SimplifiedSpotifyTrack:
         return cls(
             id=data['id'],
             name=data['name'],

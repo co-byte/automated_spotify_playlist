@@ -4,10 +4,10 @@ from typing import Dict, List, Optional
 from pydantic import HttpUrl
 
 from app.spotify.requests.models.page.page import Page
-from app.spotify.requests.models.track.simplified_track import SimplifiedTrack
+from app.spotify.requests.models.track.simplified_track import SimplifiedSpotifyTrack
 
 
-class TracksPage(Page[SimplifiedTrack]):
+class TracksPage(Page[SimplifiedSpotifyTrack]):
 
     def __init__(
         self,
@@ -17,10 +17,10 @@ class TracksPage(Page[SimplifiedTrack]):
         offset: int,
         previous: Optional[HttpUrl], 
         total: int, items: 
-        List[SimplifiedTrack]
+        List[SimplifiedSpotifyTrack]
         ) -> None:
         super().__init__(href, limit, next_, offset, previous, total, items)
 
     @classmethod
     def from_dict(cls, data: Dict[str, str]) -> TracksPage:
-        return super()._from_dict(data, SimplifiedTrack)
+        return super()._from_dict(data, SimplifiedSpotifyTrack)

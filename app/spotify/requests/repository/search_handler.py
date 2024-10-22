@@ -2,7 +2,7 @@ from typing import List, Dict
 
 from app.spotify.requests.repository.api_client.api_client import ApiClient
 from app.spotify.requests.models.search_response import SearchResponse
-from app.spotify.requests.models.track.simplified_track import SimplifiedTrack
+from app.spotify.requests.models.track.simplified_track import SimplifiedSpotifyTrack
 from app.spotify.requests.repository.base_handler import SpotifyRequestHandler
 from app.logging.logger import get_logger
 
@@ -35,7 +35,7 @@ class SearchHandler(SpotifyRequestHandler):
             logger.error("Search failed for query: '%s', type: '%s': %s", query, search_type, str(e))
             raise
 
-    async def search_track(self, track_name: str, artist_name: str) -> List[SimplifiedTrack]:
+    async def search_track(self, track_name: str, artist_name: str) -> List[SimplifiedSpotifyTrack]:
         query = f'track:{track_name} artist:{artist_name}'
         search_type = "track"
         result_limit = 1
@@ -48,7 +48,7 @@ class SearchHandler(SpotifyRequestHandler):
         try:
             response = await self.__search(query=query, search_type=search_type, limit=result_limit)
             search_response = SearchResponse.from_dict(response)
-            tracks: List[SimplifiedTrack] = search_response.tracks.items
+            tracks: List[SimplifiedSpotifyTrack] = search_response.tracks.items
 
             if tracks:
                 logger.info("Track search successful. Found track: '%s'", tracks[0].name)

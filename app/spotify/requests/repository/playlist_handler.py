@@ -92,11 +92,11 @@ class PlaylistHandler(SpotifyRequestHandler):
     async def update_playlist_items(
         self,
         playlist_id: str,
-        uris: List[str],
-        range_start: int,
-        insert_before: int,
-        range_length: int,
-        snapshot_id: str
+        item_uris: List[str],
+        range_start: int = None,
+        insert_before: int = None,
+        range_length: int = None,
+        snapshot_id: str = None
         ) -> str:
         """Update a playlist by reordening or replacing tracks. Returns the snapshot id."""
 
@@ -107,11 +107,11 @@ class PlaylistHandler(SpotifyRequestHandler):
 
         endpoint = f"playlists/{playlist_id}/tracks"
         body = {
-            "uris": uris,  # Changed: Send list directly to API (API should handle this properly)
+            "uris": ",".join(item_uris), # comma-separated string of uris
             "range_start": range_start,
             "insert_before": insert_before,
             "range_length": range_length,
-            "snapshot_id": snapshot_id  # Fixed the typo in the body key
+            "snapshot_id": snapshot_id
             }
 
         try:

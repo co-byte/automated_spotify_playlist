@@ -3,7 +3,12 @@ from typing import Any, Dict
 import yaml
 
 from app.configuration.config import Api, Authorization, Config, Playlist, SpotifyConfig, RadioPlusConfig
+from app.logging.logger import get_logger
 
+
+logger = get_logger(__name__)
+
+_ENCODING = "utf-8"
 
 class ConfigParser:
     def __init__(self, config_file: str):
@@ -13,7 +18,7 @@ class ConfigParser:
         """Load and parse the configuration file."""
 
         try:
-            with open(self.__config_file, 'r', encoding="utf-8") as file:
+            with open(self.__config_file, 'r', encoding=_ENCODING) as file:
                 config_data = yaml.safe_load(file)
             return self.__parse_config(config_data)
 

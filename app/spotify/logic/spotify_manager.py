@@ -1,18 +1,18 @@
 from typing import List
 
-from app.configuration.config import Playlist
 from app.logging.logger import get_logger
 from app.models.external_track import ExternalTrack
 from app.spotify.logic.spotify_manager_config import SpotifyManagerConfig
 from app.spotify.requests.models.page.playlist_page import PlaylistsPage
+from app.spotify.requests.models.playlist import Playlist
 
 
 logger = get_logger(__name__)
 
 _PLAYLIST_PAGE_SIZE = 50
-_PLAYLIST_PAGE_START_INDEX = 0
 
 class SpotifyManager:
+
     def __init__(self, config: SpotifyManagerConfig):
         self.__config = config
 
@@ -24,7 +24,7 @@ class SpotifyManager:
                 )
             playlists: List[Playlist] = page.items
 
-            if not self.__config.managed_playlist_id:
+            if not self.__config.managed_playlist_id or self.__config.managed_playlist_id == "":
                 logger.debug("No managed playlist ID provided. Assuming playlist does not exist.")
                 return False
 
@@ -41,7 +41,8 @@ class SpotifyManager:
 
             # Fetch the next playlists_page and repeat the process recursively
             # Note: the usage of recursive functions is debatable, but was preferred
-            #       in this usecase as it proved to be more elegant (and fun)
+            #       here since the number of needed recursive calls is probably zero to one
+            # Assumption: users generally have way fewer than 50 playlists
             next_limit = limit + _PLAYLIST_PAGE_SIZE
             next_offset = offset + _PLAYLIST_PAGE_SIZE
             return self.__playlists_page_contains_managed_playlist(next_limit, next_offset)
@@ -57,7 +58,7 @@ class SpotifyManager:
     async def __automated_playlist_exists(self) -> bool:
         try:
             initial_limit = _PLAYLIST_PAGE_SIZE
-            initial_offset = _PLAYLIST_PAGE_START_INDEX
+            initial_offset = 0  # Start at index 0
             playlist_exists = await self.__playlists_page_contains_managed_playlist(initial_limit, initial_offset)
 
             if playlist_exists:
@@ -71,11 +72,12 @@ class SpotifyManager:
             logger.error("Error while checking if the automated playlist exists: %s", str(e))
             raise e
 
+
     async def __update_playlist_with_tracks(self, tracks: List[ExternalTrack]) -> None:
         # Search for external tracks within Spotify and attempt to retrieve their (Spotify) URIs
         track_uris = await self.__config.search_handler.get_track_uris(tracks)
 
-        self.__config.playlist_handler.update_playlist_items(
+        await self.__config.playlist_handler.update_playlist_items(
             playlist_id=self.__config.managed_playlist_id,
             item_uris=track_uris
         )
@@ -85,13 +87,16 @@ class SpotifyManager:
             if not await self.__automated_playlist_exists():
                 logger.info("Managed playlist does not exist. Creating a new playlist.")
 
-                await self.__config.playlist_handler.create_new_playlist(
+                new_playlist = await self.__config.playlist_handler.create_new_playlist(
                     name=self.__config.managed_playlist_name,
                     is_public=self.__config.managed_playlist_is_public,
                     description=self.__config.managed_playlist_description,
                     is_collaborative=self.__config.managed_playlist_is_collaborative
                 )
 
+                # Update both local and environment variables
+                self.__config.managed_playlist_id = new_playlist.id
+                self.__config.update_stored_automated_playlist_id(new_playlist.id)
             else:
                 logger.info("Managed playlist found. Updating with new tracks.")
 

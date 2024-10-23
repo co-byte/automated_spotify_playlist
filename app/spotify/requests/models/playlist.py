@@ -1,13 +1,29 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from app.spotify.requests.models.external import ExternalUrls
 from app.spotify.requests.models.follower import Followers
 from app.spotify.requests.models.image import Image
-from app.spotify.requests.models.page.tracks_page import TracksPage
 from app.spotify.requests.models.user import User
 
+@dataclass
+class PlaylistTracks:
+    href: str
+    total: int
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> PlaylistTracks:
+        return cls(
+            href=data["href"],
+            total=int(data["total"])
+            )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "href": self.href,
+            "total": self.total,
+        }
 
 @dataclass
 class Playlist:
@@ -19,10 +35,10 @@ class Playlist:
     id: str
     images: List[Image]
     name: str
-    owner: User
+    owner: Optional[User]
     public: bool
     snapchot_id: str
-    tracks: TracksPage
+    tracks: PlaylistTracks
     type: Literal["playlist"]
     uri: str
 
@@ -32,15 +48,15 @@ class Playlist:
             collaborative=data['collaborative'],
             description=data.get('description'),
             external_urls=ExternalUrls.from_dict(data['external_urls']),
-            followers=Followers.from_dict(data.get('followers')),
+            followers=Followers.from_dict(data['followers']) if data.get('followers') else None,
             href=data['href'],
             id=data['id'],
-            images=[Image.from_dict(image_data) for image_data in data['images']],
+            images=[Image.from_dict(image_data) for image_data in data['images']] if data.get('images') else [],
             name=data['name'],
             owner=User.from_dict(data['owner']),
             public=data['public'],
             snapchot_id=data['snapshot_id'],
-            tracks=TracksPage.from_dict(data['tracks']),
+            tracks=PlaylistTracks.from_dict(data['tracks']),
             type=data['type'],
             uri=data['uri']
         )

@@ -111,7 +111,7 @@ class SearchHandler(SpotifyRequestHandler):
         if len(uris) > len(filtered_uris):
             logger.warning(
                 "Unable to retrieve Spotify URIs for %d out of %d provided external tracks.",
-                len(filtered_uris),len(uris)
+                len(uris)-len(filtered_uris),len(uris)
                 )
 
         else:

@@ -2,6 +2,10 @@ import os
 from dotenv import load_dotenv
 
 from app.environment.environment import Environment
+from app.logging.logger import get_logger
+
+
+logger = get_logger(__name__)
 
 class EnvironmentManager:
     def __init__(self, dotenv_path: str = None):
@@ -20,10 +24,14 @@ class EnvironmentManager:
         )
 
     def update_refresh_token(self, new_token_value: str) -> None:
+        logger.debug("Updating Spotify playlist ID in environment to %s", new_token_value)
         os.putenv("SPOTIFY_CLIENT_REFRESH_TOKEN", new_token_value)
 
-    def update_managed_spotify_playlist_id(self, new_id: str) -> None:
+    def update_managed_spotify_playlist_id(self, new_id: str) -> str:
         if new_id == "":
-            raise ValueError("Provided Spotify playlist ID is empty. Update aborted.")
-        
+            raise ValueError(
+                "Provided Spotify playlist ID is empty. Update of environment is aborted."
+                )
+
+        logger.debug("Updating Spotify playlist ID to %s", new_id)
         os.putenv("SPOTIFY_PLAYLIST_ID", new_id)

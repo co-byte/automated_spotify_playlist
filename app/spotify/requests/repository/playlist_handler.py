@@ -23,7 +23,7 @@ class PlaylistHandler(SpotifyRequestHandler):
             logger.error("Invalid limit value: %d. Must be between 1 and 50.", limit)
             raise ValueError("Limit must be between 1 and 50.")
 
-        if not (1 <= offset <= 100000):
+        if not (0 <= offset <= 100000):
             logger.error("Invalid offset value: %d. Must be between 1 and 100000.", offset)
             raise ValueError("Offset must be between 1 and 100000.")
 
@@ -79,7 +79,7 @@ class PlaylistHandler(SpotifyRequestHandler):
             }
 
         try:
-            playlist_data = await self._api_client.post(endpoint, json=body)
+            playlist_data = await self._api_client.post(endpoint, json_body=body)
             playlist = Playlist.from_dict(playlist_data)
 
             logger.info("Successfully created playlist '%s' for user %s.", name, self.__user_id)
@@ -92,30 +92,19 @@ class PlaylistHandler(SpotifyRequestHandler):
     async def update_playlist_items(
         self,
         playlist_id: str,
-        item_uris: List[str],
-        range_start: int = None,
-        insert_before: int = None,
-        range_length: int = None,
-        snapshot_id: str = None
+        item_uris: List[str]
         ) -> str:
         """Update a playlist by reordening or replacing tracks. Returns the snapshot id."""
 
-        logger.debug(
-            "Updating playlist %s: range_start=%d, insert_before=%d, range_length=%d, snapshot_id=%s", 
-            playlist_id, range_start, insert_before, range_length, snapshot_id
-            )
+        logger.debug("Updating playlist %s with (%d) items.", playlist_id, len(item_uris))
 
         endpoint = f"playlists/{playlist_id}/tracks"
         body = {
-            "uris": ",".join(item_uris), # comma-separated string of uris
-            "range_start": range_start,
-            "insert_before": insert_before,
-            "range_length": range_length,
-            "snapshot_id": snapshot_id
+            "uris": item_uris
             }
 
         try:
-            new_snapshot = await self._api_client.put(endpoint, json=body)
+            new_snapshot = await self._api_client.put(endpoint, json_body=body)
             logger.info(
                 "Successfully updated playlist %s. New snapshot ID: %s", 
                 playlist_id, new_snapshot

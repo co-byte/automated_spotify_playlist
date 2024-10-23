@@ -8,24 +8,24 @@ from app.spotify.requests.models.follower import Followers
 
 @dataclass
 class User:
+    display_name: Optional[str]
     external_urls: ExternalUrls
-    followers: Followers
     href: str
     id: str
     type: Literal["user"]
     uri: str
-    display_name: Optional[str]
+    followers: Optional[Followers]
 
     @classmethod
     def from_dict(cls, data: Dict) -> User:
         return cls(
+            display_name=data.get('display_name'),
             external_urls=ExternalUrls.from_dict(data['external_urls']),
-            followers=Followers.from_dict(data['followers']),
             href=data['href'],
             id=data['id'],
             type=data['type'],
             uri=data['uri'],
-            display_name=data.get('display_name')
+            followers=Followers.from_dict(data['followers']) if data.get('followers') else None
         )
 
     def to_dict(self) -> Dict:

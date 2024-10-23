@@ -1,8 +1,9 @@
 from __future__ import annotations
 from typing import Annotated, Dict, List, Optional, TypeVar, Generic
-from abc import ABC, abstractmethod
+from abc import ABC
 
 from pydantic import Field, HttpUrl
+
 
 # Define a type variable for the generic class
 T = TypeVar('T')
@@ -17,7 +18,6 @@ class Page(ABC, Generic[T]):
     total: Annotated[int, Field(ge=0)]
     items: List[T]
 
-    @abstractmethod
     def __init__(self, href: HttpUrl, limit: int, next_: Optional[HttpUrl],
                  offset: int, previous: Optional[HttpUrl], total: int,
                  items: List[T]) -> None:

@@ -1,23 +1,24 @@
 import asyncio
-from datetime import datetime
 from typing import Callable
 
 from fastapi import FastAPI
 import uvicorn
 
 from app.configuration.config import SpotifyConfig
-from app.environment.environment_manager import EnvironmentManager
 from app.configuration.config_parser import ConfigParser
+from app.environment.environment_manager import EnvironmentManager
+from app.logging.logger import get_logger
+from app.models.external_track import ExternalTrack
 from app.radio_plus.radio_plus_module import RadioPlusAPI
 from app.spotify.authorization.authorization_manager_config import AuthorizationManagerConfig
 from app.spotify.authorization.authorization_server import AuthorizationServer
-from app.spotify.requests.api_client import SpotifyApiClient
-from app.spotify.requests.repository.base.request_handler_config import RequestConfig
-from app.spotify.requests.repository.search_request_handler import SearchRequestHandler
-from app.spotify.requests.repository.track_request_handler import TrackRequestHandler
-from app.spotify.spotify_module import SpotifyAPI
+from app.spotify.logic.spotify_manager import SpotifyManager
+from app.spotify.logic.spotify_manager_config import SpotifyManagerConfig
+from app.spotify.requests.repository.api_client.api_client import ApiClient
+from app.spotify.requests.repository.api_client.api_client_config import ApiClientConfig
+from app.spotify.requests.repository.playlist_handler import PlaylistHandler
+from app.spotify.requests.repository.search_handler import SearchHandler
 from app.spotify.authorization.authorization_manager import AuthorizationManager
-from app.logging.logger import get_logger
 
 
 logger = get_logger(__name__)
@@ -37,49 +38,43 @@ async def setup_spotify_authorization(spotify_client_id: str, spotify_client_sec
         )
     return auth_manager
 
-async def update_playlist(user_id: str,
-                          spotify_playlist_name: str,
-                          radioplus_url: str,
-                          radioplus_channels: str,
-                          get_access_token: Callable[[], str]
-                          ) -> list[any]:
-    # Retrieve datetime of latest playlist update
-    date_val = datetime.strftime(datetime.now(),"%Y-%m-%d")
-    time_val = datetime.strftime(datetime.now(),"%H:%M:%S")
-
-    spotify = SpotifyAPI(
-        user_id=user_id,
-        get_access_token=get_access_token
-        )
-
+def setup_radio_plus(url: str, channel: str) -> RadioPlusAPI:
     radioplus = RadioPlusAPI(
-        url=radioplus_url,
-        channel_mapping=radioplus_channels
+        url=url,
+        channel_mapping=channel
     )
+    return radioplus
 
-    selected_playlist_id = spotify.get_playlist_id(playlist_name=spotify_playlist_name,
-                                                   user_id=user_id
-                                                   )
-
-    station_name = spotify.get_radio_station_from_playlist_description(selected_playlist_id)
+async def update_managed_playlist(
+    spotify_manager: SpotifyManager,
+    radioplus: RadioPlusAPI,
+    station_name: str,
+    ) -> None:
 
     station_id = radioplus.turn_station_name_into_id(station_name)
-    radioplus.get_daily_playlists(station_id=station_id, date=0)
+    logger.info("Selected RadioPlus station ID: %s", station_id)
 
-    todays_query = radioplus.export_daily_playlist(station_id=station_id)
-    todays_tracks_ids = spotify.get_query_track_ids(query_list=todays_query)
-    spotify.generate_playlist_from_query(track_ids=todays_tracks_ids,
-                                                  playlist_name=spotify_playlist_name,
-                                                  is_public=True,
-                                                  description=f"Queued station: {station_name} - Latest update: {date_val} @ {time_val} (GMT+2)",
-                                                  is_collaborative=False)
-    print(f"{todays_query=}")
-    return todays_query
+    track_query = radioplus.export_daily_playlist(station_id=station_id)
+    logger.debug("Received track query: %s", track_query)
+
+    track_query.append(ExternalTrack("Toupee", "Customs"))
+
+    await spotify_manager.update_managed_playlist(track_query)
+    logger.info("Succesfully updated the managed playlist")
+
 
 async def main():
     env_manager = EnvironmentManager()
     env = env_manager.load_from_env()
-    cfg = ConfigParser(env.config_file).load_config()
+
+    cfg_parser = ConfigParser(env.config_file)
+    cfg = cfg_parser.load_config()
+
+    radioplus = setup_radio_plus(
+        url=cfg.radioplus_config.url,
+        channel=cfg.radioplus_config.channels
+        )
+    logger.info("Succesfully setup RadioPlus component.")
 
     auth_server_config = uvicorn.Config(
             FastAPI(),
@@ -88,27 +83,47 @@ async def main():
             log_level="critical"  # Don't use automatic logging
         )
     auth_server = AuthorizationServer(auth_server_config)
+    logger.info("Succesfully setup authorization server.")
+
     auth_manager = await setup_spotify_authorization(
         env.spotify_client_id,
         env.spotify_client_secret,
         cfg.spotify_config,
         auth_server.get_authorization_code
         )
+    logger.info("Succesfully setup authorization manager.")
 
-    request_cfg = RequestConfig()
-    api_client = SpotifyApiClient(
-        request_cfg,
+    api_client_config = ApiClientConfig()
+    api_client = ApiClient(
+        api_client_config,
         auth_manager.build_authorization_headers
         )
-    track_request_handler = TrackRequestHandler(api_client)
-    tracks = await track_request_handler.get_tracks(["0JrWGOnyTh9BMdlSZaHGwF","0JrWGOnyTh9BMdlSZaHGwF"])
+    logger.info("Succesfully setup Spotify API client.")
 
-    first_track = tracks[0].name
-    logger.info("First track: %s", first_track)
+    playlist_handler = PlaylistHandler(api_client, env.spotify_user_id)
+    search_handler = SearchHandler(api_client)
+    logger.info("Succesfully setup Spotify implemtation handlers.")
 
-    search_request_handler = SearchRequestHandler(api_client)
-    tracks = await search_request_handler.search_track("The power of Love", "Huey Lewis & The News")
-    logger.info(tracks[0].uri)
+    spotify_manager_config = SpotifyManagerConfig(
+        playlist_handler=playlist_handler,
+        search_handler=search_handler,
+        managed_playlist_id=env.spotify_playlist_id,
+        managed_playlist_name=cfg.spotify_config.playlist.name,
+        managed_playlist_is_public=True,
+        managed_playlist_is_collaborative=False,
+        managed_playlist_description="Automatically managed playlist V2.",
+        update_stored_automated_playlist_id=env_manager.update_managed_spotify_playlist_id
+    )
+    spotify_manager = SpotifyManager(spotify_manager_config)
+    logger.info("Succesfully setup Spotify logic manager.")
+
+    await update_managed_playlist(
+        spotify_manager=spotify_manager,
+        radioplus=radioplus,
+        station_name="StuBru"
+        )
+    logger.info("Succesfully updated the managed playlist.")
+
     logger.critical("End of program.")
 
 if __name__ == "__main__":

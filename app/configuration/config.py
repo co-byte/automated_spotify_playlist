@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Dict
 
+
 @dataclass
 class Playlist:
     name: str
@@ -12,6 +13,7 @@ class Playlist:
             f"  name: '{self.name}'\n"
             f"  description: '{self.description}'"
         )
+
 
 @dataclass
 class Authorization:
@@ -29,6 +31,7 @@ class Authorization:
             f"  token_url: '{self.token_url}'"
         )
 
+
 @dataclass
 class Api:
     version: str
@@ -40,6 +43,7 @@ class Api:
             f"  version: '{self.version}'\n"
             f"  authorization: {self.authorization}"
         )
+
 
 @dataclass
 class SpotifyConfig:
@@ -53,6 +57,7 @@ class SpotifyConfig:
             f"  api: {self.api}"
         )
 
+
 @dataclass
 class RadioPlusConfig:
     url: str
@@ -65,6 +70,7 @@ class RadioPlusConfig:
             f"  url: '{self.url}'\n"
             f"  channels:\n{channels_str}"
         )
+
 
 @dataclass
 class Config:

@@ -1,9 +1,14 @@
-from typing import Any
+from typing import Any, Dict
 
 import yaml
 
 from app.configuration.config import Api, Authorization, Config, Playlist, SpotifyConfig, RadioPlusConfig
+from app.logging.logger import get_logger
 
+
+logger = get_logger(__name__)
+
+_ENCODING = "utf-8"
 
 class ConfigParser:
     def __init__(self, config_file: str):
@@ -11,10 +16,12 @@ class ConfigParser:
 
     def load_config(self) -> Config:
         """Load and parse the configuration file."""
+
         try:
-            with open(self.__config_file, 'r', encoding="utf-8") as file:
+            with open(self.__config_file, 'r', encoding=_ENCODING) as file:
                 config_data = yaml.safe_load(file)
             return self.__parse_config(config_data)
+
         except FileNotFoundError as e:
             raise FileNotFoundError(f"Configuration file {self.__config_file} not found.") from e
         except yaml.YAMLError as e:
@@ -22,8 +29,10 @@ class ConfigParser:
 
     def __parse_config(self, cfg: Any) -> Config:
         """Parse the loaded YAML data into the Config dataclass."""
+
         spotify_config = self.__parse_spotify_config(cfg)
         radioplus_config = self.__parse_radioplus_config(cfg)
+
         return Config(
             spotify_config=spotify_config, 
             radioplus_config=radioplus_config
@@ -31,31 +40,40 @@ class ConfigParser:
 
     def __parse_spotify_config(self, cfg: Any) -> SpotifyConfig:
         """Parse the Spotify configuration section from the YAML data."""
+    
         try:
+            playlist_config: Dict[str, Any] = cfg["spotify"]["playlist"]
             playlist = Playlist(
-                name=cfg["spotify"]["playlist"]["name"],
-                description=cfg["spotify"]["playlist"]["description"]
+                name=playlist_config["name"],
+                description=playlist_config["description"]
             )
+
+            auth_config = cfg["spotify"]["api"]["authorization"]
             authorization = Authorization(
-                url=cfg["spotify"]["api"]["authorization"]["url"],
-                redirect_url=cfg["spotify"]["api"]["authorization"]["redirect_url"],
-                permissions=cfg["spotify"]["api"]["authorization"]["permissions"],
-                token_url=cfg["spotify"]["api"]["authorization"]["token_url"]
+                url=auth_config["url"],
+                redirect_url=auth_config["redirect_url"],
+                permissions=auth_config["permissions"],
+                token_url=auth_config["token_url"]
             )
+
             api = Api(
                 version=cfg["spotify"]["api"]["version"],
                 authorization=authorization
             )
+
             return SpotifyConfig(playlist=playlist, api=api)
+
         except KeyError as e:
             raise KeyError(f"Missing key in Spotify configuration data: {e}") from e
 
     def __parse_radioplus_config(self, cfg: Any) -> RadioPlusConfig:
         """Parse the RadioPlus configuration section from the YAML data."""
+
         try:
             return RadioPlusConfig(
                 url=cfg["radio_plus"]["url"],
                 channels=cfg["radio_plus"]["channels"]
             )
+
         except KeyError as e:
             raise KeyError(f"Missing key in RadioPlus configuration data: {e}") from e

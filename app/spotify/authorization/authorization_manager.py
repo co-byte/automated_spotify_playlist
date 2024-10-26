@@ -7,8 +7,9 @@ from typing import Callable, Dict, Optional
 import httpx
 
 from app.spotify.authorization.authorization_manager_config import AuthorizationManagerConfig
-from app.spotify.models.tokens import Tokens
+from app.spotify.authorization.tokens import AccessToken, Tokens
 from app.logging.logger import get_logger
+
 
 logger = get_logger(__name__)
 
@@ -24,26 +25,23 @@ class AuthorizationManager:
             access_token=None,
             refresh_token=refresh_token
             )
-        self.get_auth_code_from_server = get_auth_code_from_server
+        self.__get_auth_code_from_server = get_auth_code_from_server
         self.__config = config
         logger.debug("AuthorizationManager initialized with client ID: %s", self.__config.client_id)
 
-    async def authorized_request(self, function: Callable): #TODO: complete this wrapper function
-        def wrap(*args, **kwargs):
-            logger.debug("Wrapping function %s for authorization", function.__name__)
-            return function(*args, **kwargs)
-        return wrap
+    async def build_authorization_headers(self) -> httpx.Headers:
+        access_token = await self.__get_access_token()  # Await the async method
+        authorization_header = httpx.Headers(self.__build_authorization_header(access_token.token))
+        return authorization_header
 
-    async def get_access_token(self):
-        """Ensures tokens are up-to-date and returns the latest access_token"""
-        
+    async def __get_access_token(self) -> AccessToken:
         logger.info("Access token requested.")
-        
+      
         # Option 1) An active access_token is already stored
         if self.__tokens and self.__tokens.access_token and not self.__tokens.access_token.is_expired:
             logger.info("A stored access token was provided.")
             return self.__tokens.access_token
-        
+
         # Option 2) Attempt to refresh the tokens using an existing refresh_token
         if self.__tokens and self.__tokens.refresh_token:
             try:
@@ -66,7 +64,7 @@ class AuthorizationManager:
         state = await self.__request_authorization_to_access_user_data()
         logger.debug("Synchronization state received: %s", state)
 
-        auth_code = await self.get_auth_code_from_server(state)
+        auth_code = await self.__get_auth_code_from_server(state)
         logger.debug("Authorization code retrieved: %s", auth_code)
 
         tokens = await self.__request_new_tokens(auth_code)
@@ -116,7 +114,9 @@ class AuthorizationManager:
             "refresh_token": self.__tokens.refresh_token
         }
         try:
-            return await self.__send_token_request(parameters)
+            tokens = await self.__send_token_request(parameters)
+            logger.critical("New tokens received: %s", tokens)
+            return tokens
         except httpx.HTTPStatusError as e:
             logger.error("Error during token refresh attempt: %s", e)
             raise ValueError(f"Unable to renew tokens using refresh token {self.__tokens.refresh_token}") from e
@@ -142,5 +142,12 @@ class AuthorizationManager:
         logger.info("Tokens successfully obtained from Spotify.")
         return Tokens.from_dict(response.json())
 
-    def __base_64_encode(self, text: str) -> str:
+    @staticmethod
+    def __base_64_encode(text: str) -> str:
         return base64.b64encode(text.encode()).decode() # str -> bytes -> b64_bytes -> b64_str
+
+    @staticmethod
+    def __build_authorization_header(access_token: str):
+        return {
+            "Authorization": f"Bearer {access_token}"
+            }

@@ -4,3 +4,4 @@ pyyaml
 fastapi
 uvicorn
 httpx
+pydantic_extra_types

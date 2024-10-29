@@ -53,9 +53,9 @@ class SearchHandler(SpotifyRequestHandler):
             tracks: List[SimplifiedSpotifyTrack] = search_response.tracks.items
 
             if tracks:
-                logger.info("Track search successful. Found track: '%s'", tracks[0].name)
+                logger.debug("Track search successful. Found track: '%s'", tracks[0].name)
             else:
-                logger.info("Track search completed, but no tracks were found.")
+                logger.debug("Track search completed, but no tracks were found.")
 
             return tracks
         except Exception as e:
@@ -81,7 +81,7 @@ class SearchHandler(SpotifyRequestHandler):
             found_tracks = await self._search_track(track.track_name, track.artist, result_limit=result_limit)
 
             if found_tracks and len(found_tracks) > 0:
-                logger.debug("Track found: '%s' by artist: '%s'", found_tracks[0].name, track.artist)
+                logger.info("Track found: '%s' by artist: '%s'", found_tracks[0].name, track.artist)
                 return found_tracks[selected_track_index].uri
             else:
                 logger.warning("No track found for: '%s' by artist: '%s'", track.track_name, track.artist)

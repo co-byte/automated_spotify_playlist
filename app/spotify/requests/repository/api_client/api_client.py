@@ -77,7 +77,7 @@ class ApiClient:
         # Step 3: Send the request and handle the response
         try:
             logger.debug(
-                "Sending %s request to %s \nwith:\n\theaders: %s \n\tparams: %s \n\tbody:%s", 
+                "Sending %s request to %s with:\nheaders: %s \nparams: %s \nbody:%s", 
                 method.value, url, headers, params, json_body
                 )
             response = await self.__send_request(

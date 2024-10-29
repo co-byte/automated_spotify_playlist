@@ -64,7 +64,7 @@ class SpotifyManager:
             if playlist_exists:
                 logger.info("Existing managed playlist found.")
             else:
-                logger.info("No existing managed playlist found.")
+                logger.warning("No existing managed playlist found.")
 
             return playlist_exists
 

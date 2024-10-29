@@ -8,7 +8,7 @@ from app.configuration.config import SpotifyConfig
 from app.configuration.config_parser import ConfigParser
 from app.environment.environment_manager import EnvironmentManager
 from app.logging.logger import get_logger
-from app.radio_plus import radio_plus
+from app.vrtmax import vrtmax_client
 from app.spotify.authorization.authorization_manager_config import AuthorizationManagerConfig
 from app.spotify.authorization.authorization_server import AuthorizationServer
 from app.spotify.logic.spotify_manager import SpotifyManager
@@ -41,7 +41,7 @@ async def _update_managed_playlist(
     spotify_manager: SpotifyManager
     ) -> None:
 
-    new_tracks = radio_plus.ingest_new_tracks()
+    new_tracks = vrtmax_client.ingest_new_tracks()
 
     await spotify_manager.update_managed_playlist(new_tracks)
     logger.info("Succesfully updated the managed playlist")

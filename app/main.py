@@ -79,9 +79,12 @@ async def setup_spotify_manager(auth_manager: AuthorizationManager, env: Environ
     return spotify_manager
 
 async def update_managed_playlist(spotify_manager: SpotifyManager, vrtmax_client: VRTMaxClient) -> None:
-    new_tracks = vrtmax_client.ingest_new_tracks()
-    await spotify_manager.update_managed_playlist(new_tracks)
-    logger.info("Successfully updated the managed playlist.")
+    try:
+        new_tracks = vrtmax_client.ingest_new_tracks()
+        await spotify_manager.update_managed_playlist(new_tracks)
+        logger.info("Successfully updated the managed playlist.")
+    except Exception as e:
+        logger.error("Unable to update the managed playlist: %s", str(e))
 
 async def setup() ->  Tuple[SpotifyManager, VRTMaxClient]:
     env_manager = EnvironmentManager()

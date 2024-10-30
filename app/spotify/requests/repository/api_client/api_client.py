@@ -41,25 +41,6 @@ class ApiClient:
     async def __send_request(
         self,
         method: __RequestMethod,
-        url: httpx.URL,
-        headers: Dict[str, str],
-        timeout: Optional[int] = 5,
-        json_body: Optional[Dict[str, Any]] = None
-    ) -> httpx.Response:
-        async with httpx.AsyncClient() as client:
-            response = await client.request(
-                method=method.value,
-                url=url,
-                headers=headers,
-                timeout=timeout,
-                json=json_body
-            )
-            response.raise_for_status()  # Raises HTTPStatusError if the response is not 2xx
-            return response
-
-    async def __request(
-        self,
-        method: __RequestMethod,
         endpoint: str,
         params: Optional[Dict[str, Any]] = None,
         headers: Optional[Dict[str, str]] = None,
@@ -68,28 +49,29 @@ class ApiClient:
     ) -> dict:
         """Handles a general API request with authorization and response parsing."""
 
-        # Step 1: Build URL with query parameters if provided
-        url = self.__build_url(endpoint, params)
-
-        # Step 2: Build headers (authorization + custom headers)
-        headers = await self.__build_headers(headers)
-
-        # Step 3: Send the request and handle the response
         try:
+            # Step 1: Build URL with query parameters if provided
+            url = self.__build_url(endpoint, params)
+
+            # Step 2: Build headers (authorization + custom headers)
+            headers = await self.__build_headers(headers)
+
+            # Step 3: Send the request and handle the response
             logger.debug(
                 "Sending %s request to %s \nwith:\n\theaders: %s \n\tparams: %s \n\tbody:%s", 
                 method.value, url, headers, params, json_body
                 )
-            response = await self.__send_request(
-                method=method,
-                url=url,
-                headers=headers,
-                timeout=timeout,
-                json_body=json_body
-            )
 
-            # Step 4: Return the JSON response
-            return response.json()
+            async with httpx.AsyncClient() as client:
+                response = await client.request(
+                    method=method.value,
+                    url=url,
+                    headers=headers,
+                    timeout=timeout,
+                    json=json_body
+                )
+                response.raise_for_status()
+                return response.json()
 
         except httpx.HTTPStatusError as e:
             logger.error(
@@ -122,7 +104,7 @@ class ApiClient:
             raise  # Re-raise any unexpected exceptions
 
     async def get(self, endpoint: str, params: Optional[Dict[str, Any]] = None, headers: Optional[Dict[str, str]] = None) -> dict:
-        return await self.__request(
+        return await self.__send_request(
             method=self.__RequestMethod.GET,
             endpoint=endpoint,
             params=params,
@@ -130,7 +112,7 @@ class ApiClient:
         )
 
     async def post(self, endpoint: str, json_body: Dict[str, Any], headers: Optional[Dict[str, str]] = None) -> dict:
-        return await self.__request(
+        return await self.__send_request(
             method=self.__RequestMethod.POST,
             endpoint=endpoint,
             headers=headers,
@@ -138,7 +120,7 @@ class ApiClient:
         )
 
     async def put(self, endpoint: str, json_body: Dict[str, Any], headers: Optional[Dict[str, str]] = None) -> dict:
-        return await self.__request(
+        return await self.__send_request(
             method=self.__RequestMethod.PUT,
             endpoint=endpoint,
             headers=headers,
@@ -146,7 +128,7 @@ class ApiClient:
         )
 
     async def delete(self, endpoint: str, params: Optional[Dict[str, Any]] = None, headers: Optional[Dict[str, str]] = None) -> dict:
-        return await self.__request(
+        return await self.__send_request(
             method=self.__RequestMethod.DELETE,
             endpoint=endpoint,
             params=params,

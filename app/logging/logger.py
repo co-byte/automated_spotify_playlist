@@ -1,9 +1,10 @@
 import logging
 from datetime import datetime
 
-LOG_LEVEL_WIDTH = 8                 # Longest level ('CRITICAL') contains 8 chars
-CLASS_METHOD_WIDTH = 65             # Width for class and method names for alignment
-LOG_COLORS = {
+_LOG_LEVEL_WIDTH = 8                # Longest level ('CRITICAL') contains 8 chars
+_LOG_LOCATION_WIDTH = 35            # Width for filename and line number for alignment
+_LOG_METHOD_WIDTH = 45              # Width for method names for alignment
+_LOG_COLORS = {
     logging.DEBUG: "\033[94m",      # Blue
     logging.INFO: "\033[92m",       # Green
     logging.WARNING: "\033[93m",    # Yellow
@@ -18,14 +19,15 @@ class CustomFormatter(logging.Formatter):
     # Overwrite default format
     def format(self, record):
         log_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        log_level = record.levelname.center(LOG_LEVEL_WIDTH)
-        log_class_method = f"{record.module}.{record.funcName}".ljust(CLASS_METHOD_WIDTH)
-
-        log_msg = f"{log_time} | {log_class_method} | {log_level} | {record.getMessage()}"
+        log_level = record.levelname.center(_LOG_LEVEL_WIDTH)
+        log_location = f"{record.filename}:{record.lineno}".ljust(_LOG_LOCATION_WIDTH)
+        log_method = f"{record.funcName}".ljust(_LOG_METHOD_WIDTH)
+       
+        log_msg = f"{log_time} | {log_location} | {log_method} | {log_level} | {record.getMessage()}"
 
         # Apply color based on the log level using ANSI escape codes
-        color = LOG_COLORS.get(record.levelno, LOG_COLORS["RESET"])
-        reset = LOG_COLORS["RESET"]
+        color = _LOG_COLORS.get(record.levelno, _LOG_COLORS["RESET"])
+        reset = _LOG_COLORS["RESET"]
 
         # Return the colored log message
         return f"{color}{log_msg}{reset}"

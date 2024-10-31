@@ -161,7 +161,7 @@ async def main() -> None:
     # Update the managed playlist indefinitely once every day
     while True:
         await update_managed_playlist(spotify_manager=spotify_manager, vrtmax_client=vrtmax_client)
-        await asyncio.sleep(datetime.timedelta(days=1))
+        await asyncio.sleep(datetime.timedelta(days=1).total_seconds())
 
 if __name__ == "__main__":
     asyncio.run(main())

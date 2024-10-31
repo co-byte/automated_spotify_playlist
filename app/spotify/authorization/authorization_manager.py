@@ -34,7 +34,7 @@ class AuthorizationManager:
     async def build_authorization_headers(self) -> httpx.Headers:
         try:
             access_token = await self.__get_access_token()  # Await the async method
-            authorization_header = httpx.Headers({"Authorization": f"Bearer {access_token}"})
+            authorization_header = httpx.Headers({"Authorization": f"Bearer {access_token.token}"})
             return authorization_header
 
         except Exception as e:

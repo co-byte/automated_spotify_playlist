@@ -2,13 +2,21 @@ from enum import Enum
 import urllib
 import urllib.parse
 import httpx
-from typing import Coroutine, Optional, Dict, Any
+from typing import Optional, Dict, Any
 
 from app.logging.logger import get_logger
+from app.spotify.authorization.authorization_manager import AuthorizationError, AuthorizationManager
 from app.spotify.requests.repository.api_client.api_client_config import ApiClientConfig
 
 
 logger = get_logger(__name__)
+
+
+class SpotifyApiError(Exception):
+    """Custom exception for Spotify API errors."""
+
+class SpotifyApiHeaderError(SpotifyApiError):
+    """Custom exception for Spotify API request header errors."""
 
 class ApiClient:
     """Provides CRUD operations for the Spotify API with authorization support."""
@@ -19,9 +27,9 @@ class ApiClient:
         PUT = "PUT"
         DELETE = "DELETE"
 
-    def __init__(self, config: ApiClientConfig, get_authorization_headers: Coroutine[Any, Any, httpx.Headers]):
+    def __init__(self, config: ApiClientConfig, auth_manager: AuthorizationManager):
         self.__base_url = f"{config.base_address}/{config.api_version}"
-        self.__get_authorization_headers = get_authorization_headers
+        self.__auth_manager = auth_manager
 
     def __build_url(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> httpx.URL:
         url = f"{self.__base_url}/{endpoint}"
@@ -33,31 +41,18 @@ class ApiClient:
         if not additional_headers:
             additional_headers: Dict[str, str] = {}
 
-        auth_headers = await self.__get_authorization_headers()
+        try:
+            auth_headers = await self.__auth_manager.build_authorization_headers()
 
-        # Merge headers and give priority to authorization headers
-        return {**additional_headers, **auth_headers}
+            # Merge headers and give priority to authorization headers
+            return {**additional_headers, **auth_headers}
+
+        except AuthorizationError as ae:
+            message = "Failed to retrieve authorization headers."
+            logger.error(message)
+            raise SpotifyApiHeaderError(message) from ae
 
     async def __send_request(
-        self,
-        method: __RequestMethod,
-        url: httpx.URL,
-        headers: Dict[str, str],
-        timeout: Optional[int] = 5,
-        json_body: Optional[Dict[str, Any]] = None
-    ) -> httpx.Response:
-        async with httpx.AsyncClient() as client:
-            response = await client.request(
-                method=method.value,
-                url=url,
-                headers=headers,
-                timeout=timeout,
-                json=json_body
-            )
-            response.raise_for_status()  # Raises HTTPStatusError if the response is not 2xx
-            return response
-
-    async def __request(
         self,
         method: __RequestMethod,
         endpoint: str,
@@ -68,29 +63,34 @@ class ApiClient:
     ) -> dict:
         """Handles a general API request with authorization and response parsing."""
 
-        # Step 1: Build URL with query parameters if provided
-        url = self.__build_url(endpoint, params)
-
-        # Step 2: Build headers (authorization + custom headers)
-        headers = await self.__build_headers(headers)
-
-        # Step 3: Send the request and handle the response
         try:
+            # Step 1: Build URL with query parameters if provided
+            url = self.__build_url(endpoint, params)
+
+            # Step 2: Build headers (authorization + custom headers)
+            headers = await self.__build_headers(headers)
+
+            # Step 3: Send the request and handle the response
             logger.debug(
                 "Sending %s request to %s \nwith:\n\theaders: %s \n\tparams: %s \n\tbody:%s", 
                 method.value, url, headers, params, json_body
                 )
-            response = await self.__send_request(
-                method=method,
-                url=url,
-                headers=headers,
-                timeout=timeout,
-                json_body=json_body
-            )
 
-            # Step 4: Return the JSON response
-            return response.json()
+            async with httpx.AsyncClient() as client:
+                response = await client.request(
+                    method=method.value,
+                    url=url,
+                    headers=headers,
+                    timeout=timeout,
+                    json=json_body
+                )
+                response.raise_for_status()
+                return response.json()
 
+        except SpotifyApiHeaderError as e:
+            logger.error("Unable to provide headers for %s request to %s", method.value, endpoint)
+            raise SpotifyApiError from e
+        
         except httpx.HTTPStatusError as e:
             logger.error(
                 "HTTP error while attempting to %s %s: Received status %d. Response body: %s",
@@ -113,7 +113,7 @@ class ApiClient:
             ) from e
 
         except Exception as e:
-            logger.error(
+            logger.critical(
                 "Unexpected error while attempting to %s %s: %s",
                 method.value,
                 endpoint,
@@ -122,7 +122,7 @@ class ApiClient:
             raise  # Re-raise any unexpected exceptions
 
     async def get(self, endpoint: str, params: Optional[Dict[str, Any]] = None, headers: Optional[Dict[str, str]] = None) -> dict:
-        return await self.__request(
+        return await self.__send_request(
             method=self.__RequestMethod.GET,
             endpoint=endpoint,
             params=params,
@@ -130,7 +130,7 @@ class ApiClient:
         )
 
     async def post(self, endpoint: str, json_body: Dict[str, Any], headers: Optional[Dict[str, str]] = None) -> dict:
-        return await self.__request(
+        return await self.__send_request(
             method=self.__RequestMethod.POST,
             endpoint=endpoint,
             headers=headers,
@@ -138,7 +138,7 @@ class ApiClient:
         )
 
     async def put(self, endpoint: str, json_body: Dict[str, Any], headers: Optional[Dict[str, str]] = None) -> dict:
-        return await self.__request(
+        return await self.__send_request(
             method=self.__RequestMethod.PUT,
             endpoint=endpoint,
             headers=headers,
@@ -146,7 +146,7 @@ class ApiClient:
         )
 
     async def delete(self, endpoint: str, params: Optional[Dict[str, Any]] = None, headers: Optional[Dict[str, str]] = None) -> dict:
-        return await self.__request(
+        return await self.__send_request(
             method=self.__RequestMethod.DELETE,
             endpoint=endpoint,
             params=params,

@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 from typing import Tuple
 
 from fastapi import FastAPI
@@ -45,7 +46,7 @@ async def setup_spotify_authorization(spotify_client_id: str, spotify_client_sec
     )
     auth_manager = AuthorizationManager(
         auth_config,
-        auth_server.get_authorization_code
+        auth_server
     )
     logger.info("Successfully set up authorization manager.")
 
@@ -55,7 +56,7 @@ async def setup_spotify_manager(auth_manager: AuthorizationManager, env: Environ
     api_client_config = ApiClientConfig()
     api_client = ApiClient(
         api_client_config,
-        auth_manager.build_authorization_headers
+        auth_manager
     )
     logger.info("Successfully set up Spotify API client.")
 
@@ -83,8 +84,9 @@ async def update_managed_playlist(spotify_manager: SpotifyManager, vrtmax_client
         new_tracks = vrtmax_client.ingest_new_tracks()
         await spotify_manager.update_managed_playlist(new_tracks)
         logger.info("Successfully updated the managed playlist.")
-    except Exception as e:
-        logger.error("Unable to update the managed playlist: %s", str(e))
+
+    except Exception:
+        logger.error("Unable to update the managed playlist")
 
 async def setup() ->  Tuple[SpotifyManager, VRTMaxClient]:
     env_manager = EnvironmentManager()
@@ -156,12 +158,10 @@ async def setup() ->  Tuple[SpotifyManager, VRTMaxClient]:
 async def main() -> None:
     spotify_manager, vrtmax_client = await setup()
 
-    for _ in range(2):
+    # Update the managed playlist indefinitely once every day
+    while True:
         await update_managed_playlist(spotify_manager=spotify_manager, vrtmax_client=vrtmax_client)
-        logger.info("Successfully updated the managed playlist.")
-        await asyncio.sleep(10)
-
-    logger.critical("End of program.")
+        await asyncio.sleep(datetime.timedelta(days=1))
 
 if __name__ == "__main__":
     asyncio.run(main())

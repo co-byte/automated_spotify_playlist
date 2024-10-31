@@ -53,7 +53,7 @@ class PlaylistHandler(SpotifyRequestHandler):
             return playlist_page
 
         except Exception as e:
-            logger.error("Failed to fetch playlists for user %s: %s", self.__user_id, str(e))
+            logger.error("Failed to fetch playlists for user %s", self.__user_id)
             raise e
 
     async def create_new_playlist(
@@ -87,7 +87,7 @@ class PlaylistHandler(SpotifyRequestHandler):
 
         except Exception as e:
             logger.error("Failed to create playlist for user %s: %s", self.__user_id, str(e))
-            raise
+            raise e
 
     async def update_playlist_items(
         self,

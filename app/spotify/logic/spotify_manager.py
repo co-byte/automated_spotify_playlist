@@ -52,7 +52,6 @@ class SpotifyManager:
             raise ve
 
         except Exception as e:
-            logger.error("Unexpected error fetching playlists: %s", str(e))
             raise e
 
     async def __automated_playlist_exists(self) -> bool:
@@ -69,9 +68,7 @@ class SpotifyManager:
             return playlist_exists
 
         except Exception as e:
-            logger.error("Error while checking if the automated playlist exists: %s", str(e))
             raise e
-
 
     async def __update_playlist_with_tracks(self, tracks: List[ExternalTrack]) -> None:
         # Search for external tracks within Spotify and attempt to retrieve their (Spotify) URIs
@@ -103,5 +100,4 @@ class SpotifyManager:
             await self.__update_playlist_with_tracks(tracks)
 
         except Exception as e:
-            logger.error("Error updating the managed playlist: %s", str(e))
-            raise # Simply propagate the error, it's up to the top caller to decide what should happen
+            raise e

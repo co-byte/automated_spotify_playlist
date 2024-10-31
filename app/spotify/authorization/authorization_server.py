@@ -6,7 +6,7 @@ from fastapi import Request
 from app.logging.logger import get_logger
 
 
-_AUTH_SERVER_TIMEOUT_SECONDS = 20
+_USER_AUTH_COMPLETE_TIMEOUT_SECONDS = 60
 
 logger = get_logger(__name__)
 
@@ -67,36 +67,30 @@ class AuthorizationServer:
     async def get_authorization_code(self, synchronization_state: str) -> Optional[str]:
         """
         Starts the authorization server and waits for the authorization code.
-        Returns this code once it's received and shuts down the server.
+        Returns said code once received and shuts down the server.
         """
         self.__synchronization_state = synchronization_state
-
-        # Start the Uvicorn server on a separate thread
         server = uvicorn.Server(self.__config)
-        server_task = asyncio.create_task(self.__start_server(server))
 
         try:
-            logger.info("Starting authorization server task.")
-            await asyncio.wait_for(
-                self.__shutdown_event.wait(),
-                timeout=_AUTH_SERVER_TIMEOUT_SECONDS
-                )
+            server_task = asyncio.create_task(self.__start_server(server))
+            await asyncio.wait_for(self.__shutdown_event.wait(), timeout=_USER_AUTH_COMPLETE_TIMEOUT_SECONDS)
 
-            logger.info("Shutdown signal received. Attempting to shut down the server gracefully.")
-            await server.shutdown()
-
+            logger.info("Received shutdown signal and shutting down server.")
             return self.__auth_code
 
         except asyncio.TimeoutError as te:
-            logger.warning(
-                "Server did not complete within %d seconds. Aborting the process.",
-                _AUTH_SERVER_TIMEOUT_SECONDS
-                )
-            raise te
+            message = f"Authorization process timed out after waiting {_USER_AUTH_COMPLETE_TIMEOUT_SECONDS} seconds for user completion."
+            logger.warning(message)
+            raise TimeoutError(message) from te
 
         except asyncio.CancelledError as ce:
-            logger.warning("Server shutdown process was interrupted or cancelled.")
+            logger.warning("Server shutdown process was cancelled.")
             raise ce
+
+        except Exception as e:
+            logger.error("Error retrieving authorization code: %s", e)
+            raise RuntimeError(f"Failed to retrieve authorization code: {str(e)}") from e
 
         finally:
             await server.shutdown()

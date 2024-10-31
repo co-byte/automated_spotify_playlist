@@ -2,11 +2,12 @@ import base64
 import secrets
 import urllib.parse
 import webbrowser
-from typing import Callable, Dict, Optional
+from typing import Dict, Optional
 
 import httpx
 
 from app.spotify.authorization.authorization_manager_config import AuthorizationManagerConfig
+from app.spotify.authorization.authorization_server import AuthorizationServer
 from app.spotify.authorization.tokens import AccessToken, Tokens
 from app.logging.logger import get_logger
 
@@ -18,41 +19,46 @@ _TOKEN_REQUEST_CONTENT_TYPE = 'application/x-www-form-urlencoded'
 _USER_DATA_REQUEST_RESPONSE_TYPE = "code"
 _AUTHORIZATION_GRANT_TYPE = 'authorization_code'
 _REFRESH_TOKEN_GRANT_TYPE = 'refresh_token'
+_REQUEST_TIMEOUT_SECONDS = 5
 
-_AUTHORIZATION_TIMEOUT_SECONDS = 20
-
+class AuthorizationError(Exception):
+    """Custom exception for handling authorization process failures."""
 
 class AuthorizationManager:
-    def __init__(self, config: AuthorizationManagerConfig, get_auth_code_from_server: Callable[[str], Optional[str]], refresh_token: Optional[str] = None) -> None:
+    def __init__(self, config: AuthorizationManagerConfig, authorization_server: AuthorizationServer, refresh_token: Optional[str] = None) -> None:
         self.__tokens = Tokens(access_token=None, refresh_token=refresh_token)
-        self.__get_auth_code_from_server = get_auth_code_from_server
+        self.__auth_server = authorization_server
         self.__config = config
         logger.debug("AuthorizationManager initialized with client ID: %s", self.__config.client_id)
 
     async def build_authorization_headers(self) -> httpx.Headers:
-        access_token = await self.__get_access_token()  # Await the async method
-        authorization_header = httpx.Headers(self.__build_authorization_header(access_token.token))
-        return authorization_header
+        try:
+            access_token = await self.__get_access_token()  # Await the async method
+            authorization_header = httpx.Headers({"Authorization": f"Bearer {access_token}"})
+            return authorization_header
+
+        except Exception as e:
+            message = "Unable to build authorization headers."
+            logger.error(message)
+            raise AuthorizationError(message) from e
 
     async def __get_access_token(self) -> AccessToken:
         logger.info("Access token requested.")
 
-        # Option 1) An active access_token is already stored
+        # Option 1: Stored valid access token
         if self.__tokens and self.__tokens.access_token and not self.__tokens.access_token.is_expired:
             logger.info("A stored access token was provided.")
             return self.__tokens.access_token
 
-        # Option 2) Attempt to refresh the tokens using an existing refresh_token
+        # Option 2: Refresh tokens
         if self.__tokens and self.__tokens.refresh_token:
-            try:
-                logger.info("Attempting to refresh tokens.")
-                self.__tokens = await self.__refresh_tokens()
-                logger.info("A refreshed access token was provided.")
-                return self.__tokens.access_token
-            except ValueError:
-                logger.warning("Unable to refresh tokens, performing full user authorization.")
+            logger.info("Attempting to refresh tokens.")
+            self.__tokens = await self.__refresh_tokens()
 
-        # Option 3) Go through the complete user authorization process
+            logger.info("A refreshed access token was provided.")
+            return self.__tokens.access_token
+
+        # Option 3: Full user authorization
         self.__tokens = await self.__perform_full_authorization()
         logger.info("A new access token was provided.")
         return self.__tokens.access_token
@@ -64,11 +70,8 @@ class AuthorizationManager:
         state = await self.__request_authorization_to_access_user_data()
         logger.debug("Synchronization state received: %s", state)
 
-        auth_code = await self.__get_auth_code_from_server(state)
+        auth_code = await self.__auth_server.get_authorization_code(state)
         logger.debug("Authorization code retrieved: %s", auth_code)
-
-        if auth_code is None:
-            raise ValueError("Authorization process failed: no authorization code received.")
 
         tokens = await self.__request_new_tokens(auth_code)
         logger.debug("New tokens received: %s", tokens)
@@ -86,22 +89,17 @@ class AuthorizationManager:
             "state": synchronization_state,
             "scope": self.__config.scope
         })
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                self.__config.auth_url,
+                params=params,
+                timeout=_REQUEST_TIMEOUT_SECONDS
+                )
 
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    self.__config.auth_url,
-                    params=params,
-                    timeout=_AUTHORIZATION_TIMEOUT_SECONDS
-                    )
-                webbrowser.get().open(f"{response.url}")
+            webbrowser.get().open(f"{response.url}")
 
-            logger.info("Authorization URL opened in browser.")
-            return synchronization_state
-
-        except (httpx.TimeoutException, httpx.RequestError) as e:
-            logger.warning("Authorization request failed: %s.", e)
-            raise e
+        logger.info("Authorization URL opened in browser.")
+        return synchronization_state
 
     async def __request_new_tokens(self, authorization_code: str) -> Tokens:
         """ Exchanges a user authorization code for an access & refresh token. """
@@ -128,9 +126,10 @@ class AuthorizationManager:
             return tokens
 
         except httpx.HTTPStatusError as e:
-            logger.error(   "Error during token refresh attempt: %s", e)
+            logger.error("Error during token refresh attempt: %s", e)
             raise ValueError(f"Token refresh failed for refresh token {self.__tokens.refresh_token}") from e
 
+    # Utility
     async def __send_token_request(self, parameters: Dict[str, str]) -> Tokens:
         """Utility method to send a token request and process the response."""
 
@@ -149,7 +148,7 @@ class AuthorizationManager:
                 response = await client.post(
                     url=self.__config.token_url,
                     data=parameters, headers=headers,
-                    timeout=_AUTHORIZATION_TIMEOUT_SECONDS
+                    timeout=_REQUEST_TIMEOUT_SECONDS
                     )
                 logger.debug("Token request response status: %s", response.status_code)
 
@@ -165,7 +164,3 @@ class AuthorizationManager:
     @staticmethod
     def __base_64_encode(text: str) -> str:
         return base64.b64encode(text.encode()).decode() # str -> bytes -> b64_bytes -> b64_str
-
-    @staticmethod
-    def __build_authorization_header(access_token: str):
-        return {"Authorization": f"Bearer {access_token}"}

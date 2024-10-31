@@ -2,13 +2,21 @@ from enum import Enum
 import urllib
 import urllib.parse
 import httpx
-from typing import Coroutine, Optional, Dict, Any
+from typing import Optional, Dict, Any
 
 from app.logging.logger import get_logger
+from app.spotify.authorization.authorization_manager import AuthorizationError, AuthorizationManager
 from app.spotify.requests.repository.api_client.api_client_config import ApiClientConfig
 
 
 logger = get_logger(__name__)
+
+
+class SpotifyApiError(Exception):
+    """Custom exception for Spotify API errors."""
+
+class SpotifyApiHeaderError(SpotifyApiError):
+    """Custom exception for Spotify API request header errors."""
 
 class ApiClient:
     """Provides CRUD operations for the Spotify API with authorization support."""
@@ -19,9 +27,9 @@ class ApiClient:
         PUT = "PUT"
         DELETE = "DELETE"
 
-    def __init__(self, config: ApiClientConfig, get_authorization_headers: Coroutine[Any, Any, httpx.Headers]):
+    def __init__(self, config: ApiClientConfig, auth_manager: AuthorizationManager):
         self.__base_url = f"{config.base_address}/{config.api_version}"
-        self.__get_authorization_headers = get_authorization_headers
+        self.__auth_manager = auth_manager
 
     def __build_url(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> httpx.URL:
         url = f"{self.__base_url}/{endpoint}"
@@ -33,10 +41,16 @@ class ApiClient:
         if not additional_headers:
             additional_headers: Dict[str, str] = {}
 
-        auth_headers = await self.__get_authorization_headers()
+        try:
+            auth_headers = await self.__auth_manager.build_authorization_headers()
 
-        # Merge headers and give priority to authorization headers
-        return {**additional_headers, **auth_headers}
+            # Merge headers and give priority to authorization headers
+            return {**additional_headers, **auth_headers}
+
+        except AuthorizationError as ae:
+            message = "Failed to retrieve authorization headers."
+            logger.error(message)
+            raise SpotifyApiHeaderError(message) from ae
 
     async def __send_request(
         self,
@@ -73,6 +87,10 @@ class ApiClient:
                 response.raise_for_status()
                 return response.json()
 
+        except SpotifyApiHeaderError as e:
+            logger.error("Unable to provide headers for %s request to %s", method.value, endpoint)
+            raise SpotifyApiError from e
+        
         except httpx.HTTPStatusError as e:
             logger.error(
                 "HTTP error while attempting to %s %s: Received status %d. Response body: %s",
@@ -95,7 +113,7 @@ class ApiClient:
             ) from e
 
         except Exception as e:
-            logger.error(
+            logger.critical(
                 "Unexpected error while attempting to %s %s: %s",
                 method.value,
                 endpoint,

@@ -14,7 +14,7 @@ class EnvironmentManager:
     def load_from_env(self) -> Environment:
         """Load environment variables into the Environment dataclass."""
         return Environment(
-            config_file=os.getenv("CONFIG_FILE"),
+            spotify_config_file=os.getenv("SPOTIFY_CONFIG_FILE"),
             spotify_user_id=os.getenv("SPOTIFY_USER_ID"),
             spotify_playlist_id=os.getenv("SPOTIFY_PLAYLIST_ID"),
             spotify_client_id=os.getenv("SPOTIFY_CLIENT_ID"),

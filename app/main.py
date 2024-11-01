@@ -6,8 +6,8 @@ from fastapi import FastAPI
 import httpx
 import uvicorn
 
-from app.configuration.config import Api, Authorization, Config, Playlist, SpotifyConfig
 from app.configuration.config_parser import ConfigParser
+from app.configuration.spotify_config import Api, Playlist, SpotifyConfig
 from app.environment.environment import Environment
 from app.environment.environment_manager import EnvironmentManager
 from app.logging.logger import get_logger
@@ -26,7 +26,11 @@ from app.vrtmax.vrtmax_client_config import VRTMaxClientConfig
 
 logger = get_logger(__name__)
 
-async def setup_spotify_authorization(spotify_client_id: str, spotify_client_secret: str, spotify_config: SpotifyConfig) -> AuthorizationManager:
+
+async def setup_spotify_authorization(
+    spotify_client_id: str, spotify_client_secret: str, spotify_config: SpotifyConfig
+) -> AuthorizationManager:
+    
     auth_server_config = uvicorn.Config(
         FastAPI(),
         host="localhost",
@@ -44,20 +48,20 @@ async def setup_spotify_authorization(spotify_client_id: str, spotify_client_sec
         spotify_config.api.authorization.redirect_url,
         spotify_config.api.authorization.permissions
     )
-    auth_manager = AuthorizationManager(
-        auth_config,
-        auth_server
-    )
+    auth_manager = AuthorizationManager(auth_config, auth_server)
     logger.info("Successfully set up authorization manager.")
 
     return auth_manager
 
-async def setup_spotify_manager(auth_manager: AuthorizationManager, env: Environment, env_manager: EnvironmentManager, cfg: Config) -> SpotifyManager:
+async def setup_spotify_manager(
+    auth_manager: AuthorizationManager,
+    env: Environment,
+    env_manager: EnvironmentManager,
+    cfg: SpotifyConfig,
+) -> SpotifyManager:
+
     api_client_config = ApiClientConfig()
-    api_client = ApiClient(
-        api_client_config,
-        auth_manager
-    )
+    api_client = ApiClient(api_client_config, auth_manager)
     logger.info("Successfully set up Spotify API client.")
 
     playlist_handler = PlaylistHandler(api_client, env.spotify_user_id)
@@ -79,7 +83,9 @@ async def setup_spotify_manager(auth_manager: AuthorizationManager, env: Environ
 
     return spotify_manager
 
-async def update_managed_playlist(spotify_manager: SpotifyManager, vrtmax_client: VRTMaxClient) -> None:
+async def update_managed_playlist(
+    spotify_manager: SpotifyManager, vrtmax_client: VRTMaxClient
+) -> None:
     try:
         new_tracks = vrtmax_client.ingest_new_tracks()
         await spotify_manager.update_managed_playlist(new_tracks)
@@ -88,27 +94,26 @@ async def update_managed_playlist(spotify_manager: SpotifyManager, vrtmax_client
     except Exception:
         logger.error("Unable to update the managed playlist")
 
-async def setup() ->  Tuple[SpotifyManager, VRTMaxClient]:
+
+async def setup() -> Tuple[SpotifyManager, VRTMaxClient]:
     env_manager = EnvironmentManager()
     env = env_manager.load_from_env()
 
-    cfg_parser = ConfigParser(env.config_file)
-    cfg = cfg_parser.load_config()
+    cfg_parser = ConfigParser(env.spotify_config_file)
+    spotify_config = cfg_parser.load_spotify_config()
+
+    playlist = spotify_config.playlist
+    authorization = spotify_config.api.authorization
 
     spotify_config = SpotifyConfig(
         playlist=Playlist(
-            name=cfg.spotify_config.playlist.name,
-            description=cfg.spotify_config.playlist.description
+            name=playlist.name,
+            description=playlist.description,
         ),
         api=Api(
-            version=cfg.spotify_config.api.version,
-            authorization=Authorization(
-                url=cfg.spotify_config.api.authorization.url,
-                token_url=cfg.spotify_config.api.authorization.token_url,
-                redirect_url=cfg.spotify_config.api.authorization.redirect_url,
-                permissions=cfg.spotify_config.api.authorization.permissions
-            )
-        )
+            version=spotify_config.api.version,
+            authorization=authorization
+        ),
     )
     spotify_auth_manager = await setup_spotify_authorization(
         spotify_client_id=env.spotify_client_id,
@@ -116,39 +121,14 @@ async def setup() ->  Tuple[SpotifyManager, VRTMaxClient]:
         spotify_config=spotify_config
     )
     spotify_manager = await setup_spotify_manager(
-        auth_manager=spotify_auth_manager,
-        env=env,
-        env_manager=env_manager,
-        cfg=cfg
+        auth_manager=spotify_auth_manager, env=env, env_manager=env_manager, cfg=spotify_config
     )
 
     vrtmax_client_config = VRTMaxClientConfig(
         api_url="https://www.vrt.be/vrtnu-api/graphql/public/v1",
         component_id="#Y25pLWFsc3BnfG8lOHxzdHVkaW8tYnJ1c3NlbHxwbGF5bGlzdHxiJTF8YiUxJQ==",
         fetched_track_count=100,
-        headers=httpx.Headers({"x-vrt-client-name": "WEB"}),
-        query="""
-            query getSongs($componentId: ID!, $lazyItemCount: Int) {
-                component(id: $componentId) {
-                    ... on ContainerNavigationItem {
-                        components {
-                            ... on PaginatedTileList {
-                                paginatedItems(first: $lazyItemCount) {
-                                    edges {
-                                        node {
-                                            ... on SongTile {
-                                                title
-                                                description
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        """
+        headers=httpx.Headers({"x-vrt-client-name": "WEB"})
     )
     vrtmax_client = VRTMaxClient(vrtmax_client_config)
     logger.info("Successfully set up VRTMax client.")
@@ -160,8 +140,11 @@ async def main() -> None:
 
     # Update the managed playlist indefinitely once every day
     while True:
-        await update_managed_playlist(spotify_manager=spotify_manager, vrtmax_client=vrtmax_client)
+        await update_managed_playlist(
+            spotify_manager=spotify_manager, vrtmax_client=vrtmax_client
+        )
         await asyncio.sleep(datetime.timedelta(days=1).total_seconds())
+
 
 if __name__ == "__main__":
     asyncio.run(main())

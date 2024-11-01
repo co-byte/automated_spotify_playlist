@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 @dataclass
 class Environment:
-    config_file: str
+    spotify_config_file: str
 
     # User data
     spotify_user_id: str
@@ -27,5 +27,5 @@ class Environment:
             f"  spotify_client_secret: '{masked_client_secret}'\n"
             f"  spotify_client_refresh_token: '{masked_refresh_token}'\n"
             f"  spotify_user_id: '{self.spotify_user_id}'\n"
-            f"  config_file: '{self.config_file}'"
+            f"  spotify_config_file: '{self.spotify_config_file}'"
             )

@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Dict
 
 
 @dataclass
@@ -55,31 +54,4 @@ class SpotifyConfig:
             f"SpotifyConfig:\n"
             f"  playlist: {self.playlist}\n"
             f"  api: {self.api}"
-        )
-
-
-@dataclass
-class RadioPlusConfig:
-    url: str
-    channels: Dict[str, int]
-
-    def __str__(self):
-        channels_str = "\n".join(f"  '{channel}': {number}" for channel, number in self.channels.items())
-        return (
-            f"RadioPlus:\n"
-            f"  url: '{self.url}'\n"
-            f"  channels:\n{channels_str}"
-        )
-
-
-@dataclass
-class Config:
-    spotify_config: SpotifyConfig
-    radioplus_config: RadioPlusConfig
-
-    def __str__(self):
-        return (
-            f"Config:\n"
-            f"  spotify_config: '{self.spotify_config}'\n"
-            f"  radioplus_config: '{self.radioplus_config}'"
         )

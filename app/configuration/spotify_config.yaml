@@ -9,17 +9,3 @@ spotify:
       redirect_url: "http://localhost:5000/users/authorization/redirect"
       permissions: "ugc-image-upload playlist-modify-public playlist-read-private"
       token_url: "https://accounts.spotify.com/api/token"
-
-radio_plus:
-  url: "wss://web-sock.radioplus.be/socket.io/?EIO=4&transport=websocket"
-  channels:
-    "radio1": 11
-    "radio2": 22
-    "klara": 31
-    "stubru": 41
-    "stubrudetijdloze": 44
-    "mnm": 55
-    "mnm r&beats": 57
-    "stubruhooray": 140
-    "stubrubruut": 141
-    "stubruuntz": 142

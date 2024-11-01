@@ -40,7 +40,7 @@ class ConfigParser:
 
     def __parse_spotify_config(self, cfg: Any) -> SpotifyConfig:
         """Parse the Spotify configuration section from the YAML data."""
-    
+
         try:
             playlist_config: Dict[str, Any] = cfg["spotify"]["playlist"]
             playlist = Playlist(

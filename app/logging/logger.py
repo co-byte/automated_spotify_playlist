@@ -3,7 +3,7 @@ from datetime import datetime
 
 _LOG_LEVEL_WIDTH = 8                # Longest level ('CRITICAL') contains 8 chars
 _LOG_LOCATION_WIDTH = 35            # Width for filename and line number for alignment
-_LOG_METHOD_WIDTH = 45              # Width for method names for alignment
+_LOG_METHOD_WIDTH = 30              # Width for method names for alignment
 _LOG_COLORS = {
     logging.DEBUG: "\033[94m",      # Blue
     logging.INFO: "\033[92m",       # Green

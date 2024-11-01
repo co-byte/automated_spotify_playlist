@@ -12,23 +12,24 @@ logger = get_logger(__name__)
 
 class VRTMaxClient:
     def __init__(self, config: VRTMaxClientConfig):
-        self.__api_url = config.api_url
-        self.__component_id = config.component_id
-        self.__fetched_track_count = config.fetched_track_count
-        self.__headers = config.headers
-        self.__query = config.query
+        self.__config = config
 
     def __fetch_track_data(self) -> Dict[str, Any]:
         """Send a GraphQL request to the VRT API and return the JSON response."""
         payload = {
-            "query": self.__query,
+            "query": self.__config.query,
             "variables": {
-                "componentId": self.__component_id,
-                "lazyItemCount": self.__fetched_track_count
+                "componentId": self.__config.component_id,
+                "lazyItemCount": self.__config.fetched_track_count
             },
         }
 
-        response = httpx.post(url=self.__api_url, headers=self.__headers, json=payload, timeout=10)
+        response = httpx.post(
+            url=self.__config.api_url,
+            headers=self.__config.headers,
+            json=payload,
+            timeout=10
+            )
         response.raise_for_status()
         return response.json()
 
@@ -77,7 +78,7 @@ class VRTMaxClient:
         except httpx.HTTPStatusError as e:
             logger.error(
                 "HTTP error occurred while fetching track data from %s: %s (Status Code: %d)",
-                self.__api_url,
+                self.__config.api_url,
                 str(e),
                 e.response.status_code,
             )
@@ -85,6 +86,6 @@ class VRTMaxClient:
         except httpx.RequestError as e:
             logger.error(
                 "Request error occurred while trying to fetch track data from %s: %s",
-                self.__api_url,
+                self.__config.api_url,
                 str(e),
             )

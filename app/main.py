@@ -3,7 +3,6 @@ import datetime
 from typing import Tuple
 
 from fastapi import FastAPI
-import httpx
 import uvicorn
 
 from app.spotify.environment.environment import Environment
@@ -20,7 +19,7 @@ from app.spotify.requests.repository.playlist_handler import PlaylistHandler
 from app.spotify.requests.repository.search_handler import SearchHandler
 from app.spotify.authorization.authorization_manager import AuthorizationManager
 from app.vrtmax.vrtmax_client import VRTMaxClient
-from app.vrtmax.vrtmax_client_config import VRTMaxClientConfig
+from app.vrtmax.config.vrtmax_client_config import VRTMaxClientConfig
 from app.spotify.configuration.spotify_config import SpotifyConfig
 
 logger = get_logger(__name__)
@@ -110,12 +109,7 @@ async def setup() -> Tuple[SpotifyManager, VRTMaxClient]:
         auth_manager=spotify_auth_manager, env=env, env_manager=env_manager, cfg=spotify_config
     )
 
-    vrtmax_client_config = VRTMaxClientConfig(
-        api_url="https://www.vrt.be/vrtnu-api/graphql/public/v1",
-        component_id="#Y25pLWFsc3BnfG8lOHxzdHVkaW8tYnJ1c3NlbHxwbGF5bGlzdHxiJTF8YiUxJQ==",
-        fetched_track_count=100,
-        headers=httpx.Headers({"x-vrt-client-name": "WEB"})
-    )
+    vrtmax_client_config = VRTMaxClientConfig()
     vrtmax_client = VRTMaxClient(vrtmax_client_config)
     logger.info("Successfully set up VRTMax client.")
 

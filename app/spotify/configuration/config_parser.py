@@ -3,8 +3,8 @@ from typing import Any, Dict
 import pydantic
 import yaml
 
-from app.configuration.spotify_config import Api, Authorization, Playlist, SpotifyConfig
 from app.logging.logger import get_logger
+from app.spotify.configuration.spotify_config import Api, Authorization, Playlist, SpotifyConfig
 
 
 logger = get_logger(__name__)
@@ -28,25 +28,23 @@ class ConfigParser:
         except yaml.YAMLError as e:
             raise yaml.YAMLError(f"Error parsing YAML file: {e}") from e
 
-    def __parse_spotify_config(self, cfg: Any) -> SpotifyConfig:
-
+    def __parse_spotify_config(self, cfg: Dict[str, Any]) -> SpotifyConfig:
         try:
-            playlist_config: Dict[str, Any] = cfg["spotify"]["playlist"]
             playlist = Playlist(
-                name=playlist_config["name"],
-                description=playlist_config["description"]
+                name=cfg["playlist"]["name"],
+                description=cfg["playlist"]["description"]
             )
 
-            auth_config = cfg["spotify"]["api"]["authorization"]
+            auth_config = cfg["api"]["authorization"]
             authorization = Authorization(
-                url=auth_config["url"],
+                auth_url=auth_config["auth_url"],
                 redirect_url=auth_config["redirect_url"],
                 permissions=auth_config["permissions"],
                 token_url=auth_config["token_url"]
             )
 
             api = Api(
-                version=cfg["spotify"]["api"]["version"],
+                version=cfg["api"]["version"],
                 authorization=authorization
             )
 

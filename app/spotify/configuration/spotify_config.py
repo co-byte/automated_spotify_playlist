@@ -16,7 +16,7 @@ class Playlist:
 
 @dataclass
 class Authorization:
-    url: str
+    auth_url: str
     redirect_url: str
     permissions: str
     token_url: str
@@ -24,7 +24,7 @@ class Authorization:
     def __str__(self):
         return (
             f"Authorization:\n"
-            f"  url: '{self.url}'\n"
+            f"  url: '{self.auth_url}'\n"
             f"  redirect_url: '{self.redirect_url}'\n"
             f"  permissions: '{self.permissions}'\n"
             f"  token_url: '{self.token_url}'"

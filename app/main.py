@@ -6,13 +6,12 @@ from fastapi import FastAPI
 import httpx
 import uvicorn
 
-from app.configuration.config_parser import ConfigParser
-from app.configuration.spotify_config import Api, Playlist, SpotifyConfig
 from app.environment.environment import Environment
 from app.environment.environment_manager import EnvironmentManager
 from app.logging.logger import get_logger
 from app.spotify.authorization.authorization_manager_config import AuthorizationManagerConfig
 from app.spotify.authorization.authorization_server import AuthorizationServer
+from app.spotify.configuration.config_parser import ConfigParser
 from app.spotify.logic.spotify_manager import SpotifyManager
 from app.spotify.logic.spotify_manager_config import SpotifyManagerConfig
 from app.spotify.requests.repository.api_client.api_client import ApiClient
@@ -22,7 +21,7 @@ from app.spotify.requests.repository.search_handler import SearchHandler
 from app.spotify.authorization.authorization_manager import AuthorizationManager
 from app.vrtmax.vrtmax_client import VRTMaxClient
 from app.vrtmax.vrtmax_client_config import VRTMaxClientConfig
-
+from app.spotify.configuration.spotify_config import SpotifyConfig
 
 logger = get_logger(__name__)
 
@@ -43,7 +42,7 @@ async def setup_spotify_authorization(
     auth_config = AuthorizationManagerConfig(
         spotify_client_id,
         spotify_client_secret,
-        spotify_config.api.authorization.url,
+        spotify_config.api.authorization.auth_url,
         spotify_config.api.authorization.token_url,
         spotify_config.api.authorization.redirect_url,
         spotify_config.api.authorization.permissions
@@ -72,7 +71,7 @@ async def setup_spotify_manager(
         playlist_handler=playlist_handler,
         search_handler=search_handler,
         managed_playlist_id=env.spotify_playlist_id,
-        managed_playlist_name=cfg.spotify_config.playlist.name,
+        managed_playlist_name=cfg.playlist.name,
         managed_playlist_is_public=True,
         managed_playlist_is_collaborative=False,
         managed_playlist_description="Automatically managed playlist V2.",
@@ -102,19 +101,6 @@ async def setup() -> Tuple[SpotifyManager, VRTMaxClient]:
     cfg_parser = ConfigParser(env.spotify_config_file)
     spotify_config = cfg_parser.load_spotify_config()
 
-    playlist = spotify_config.playlist
-    authorization = spotify_config.api.authorization
-
-    spotify_config = SpotifyConfig(
-        playlist=Playlist(
-            name=playlist.name,
-            description=playlist.description,
-        ),
-        api=Api(
-            version=spotify_config.api.version,
-            authorization=authorization
-        ),
-    )
     spotify_auth_manager = await setup_spotify_authorization(
         spotify_client_id=env.spotify_client_id,
         spotify_client_secret=env.spotify_client_secret,

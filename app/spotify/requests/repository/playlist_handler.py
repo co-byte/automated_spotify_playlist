@@ -105,9 +105,10 @@ class PlaylistHandler(SpotifyRequestHandler):
 
         try:
             new_snapshot = await self._api_client.put(endpoint, json_body=body)
+            new_snapshot_id = new_snapshot.get("snapshot_id")
             logger.info(
                 "Successfully updated playlist %s. New snapshot ID: %s", 
-                playlist_id, new_snapshot
+                playlist_id, new_snapshot_id
                 )
             return new_snapshot
 

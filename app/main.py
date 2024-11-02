@@ -6,8 +6,8 @@ from fastapi import FastAPI
 import httpx
 import uvicorn
 
-from app.environment.environment import Environment
-from app.environment.environment_manager import EnvironmentManager
+from app.spotify.environment.environment import Environment
+from app.spotify.environment.environment_manager import EnvironmentManager
 from app.logging.logger import get_logger
 from app.spotify.authorization.authorization_manager_config import AuthorizationManagerConfig
 from app.spotify.authorization.authorization_server import AuthorizationServer

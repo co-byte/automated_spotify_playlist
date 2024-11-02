@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-from app.environment.environment import Environment
+from app.spotify.environment.environment import Environment
 from app.logging.logger import get_logger
 
 

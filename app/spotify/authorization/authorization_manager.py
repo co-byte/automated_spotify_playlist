@@ -2,12 +2,11 @@ import base64
 import secrets
 import urllib.parse
 import webbrowser
-from typing import Dict, Optional
+from typing import Dict
 
 import httpx
 
 from app.spotify.authorization.authorization_manager_config import AuthorizationManagerConfig
-from app.spotify.authorization.authorization_server import AuthorizationServer
 from app.spotify.authorization.models.tokens import AccessToken, Tokens
 from app.logging.logger import get_logger
 

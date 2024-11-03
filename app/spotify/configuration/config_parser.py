@@ -37,7 +37,7 @@ class ConfigParser:
         except ValueError as e:
             raise ValueError(f"Configuration file content error: {e}") from e
 
-    def __parse_spotify_config(self, cfg: Dict[str, Any]) -> SpotifyConfig: 
+    def __parse_spotify_config(self, cfg: Dict[str, Any]) -> SpotifyConfig:
         try:
             playlist = Playlist(
                 name=cfg["playlist"]["name"],

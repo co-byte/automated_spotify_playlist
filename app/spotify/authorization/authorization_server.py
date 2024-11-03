@@ -6,13 +6,12 @@ from fastapi import Request
 from app.logging.logger import get_logger
 
 
-_USER_AUTH_COMPLETE_TIMEOUT_SECONDS = 60
-
 logger = get_logger(__name__)
 
 class AuthorizationServer:
-    def __init__(self, config: uvicorn.Config):
-        self.__config = config
+    def __init__(self, server_config: uvicorn.Config, user_authorization_timeout_seconds: int = 60):
+        self.__config = server_config
+        self.__user_auth_timeout = user_authorization_timeout_seconds
         self.__auth_code: Optional[str] = None
         self.__synchronization_state: Optional[str] = None
         self.__shutdown_event = asyncio.Event()
@@ -74,13 +73,13 @@ class AuthorizationServer:
 
         try:
             server_task = asyncio.create_task(self.__start_server(server))
-            await asyncio.wait_for(self.__shutdown_event.wait(), timeout=_USER_AUTH_COMPLETE_TIMEOUT_SECONDS)
+            await asyncio.wait_for(self.__shutdown_event.wait(), timeout=self.__user_auth_timeout)
 
             logger.info("Received shutdown signal and shutting down server.")
             return self.__auth_code
 
         except asyncio.TimeoutError as te:
-            message = f"Authorization process timed out after waiting {_USER_AUTH_COMPLETE_TIMEOUT_SECONDS} seconds for user completion."
+            message = f"Authorization process timed out after waiting {self.__user_auth_timeout} seconds for user completion."
             logger.warning(message)
             raise TimeoutError(message) from te
 

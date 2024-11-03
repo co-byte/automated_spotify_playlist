@@ -26,16 +26,19 @@ logger = get_logger(__name__)
 
 
 async def setup_spotify_authorization(
-    spotify_client_id: str, spotify_client_secret: str, spotify_config: SpotifyConfig
+    spotify_client_id: str,
+    spotify_client_secret: str,
+    spotify_config: SpotifyConfig,
+    user_authorization_timeout_seconds: int
 ) -> AuthorizationManager:
-    
+
     auth_server_config = uvicorn.Config(
         FastAPI(),
         host="localhost",
         port=5000,
         log_level="critical"  # Minimize logging output for auth server
     )
-    auth_server = AuthorizationServer(auth_server_config)
+    auth_server = AuthorizationServer(auth_server_config, user_authorization_timeout_seconds)
     logger.info("Successfully set up authorization server.")
 
     auth_config = AuthorizationManagerConfig(
@@ -89,8 +92,8 @@ async def update_managed_playlist(
         await spotify_manager.update_managed_playlist(new_tracks)
         logger.info("Successfully updated the managed playlist.")
 
-    except Exception:
-        logger.error("Unable to update the managed playlist")
+    except Exception as e:
+        logger.error("Unable to update the managed playlist: %s", str(e))
 
 
 async def setup() -> Tuple[SpotifyManager, VRTMaxClient]:
@@ -103,7 +106,8 @@ async def setup() -> Tuple[SpotifyManager, VRTMaxClient]:
     spotify_auth_manager = await setup_spotify_authorization(
         spotify_client_id=env.spotify_client_id,
         spotify_client_secret=env.spotify_client_secret,
-        spotify_config=spotify_config
+        spotify_config=spotify_config,
+        user_authorization_timeout_seconds = spotify_config.api.authorization.user_auth_timemout_seconds
     )
     spotify_manager = await setup_spotify_manager(
         auth_manager=spotify_auth_manager, env=env, env_manager=env_manager, cfg=spotify_config

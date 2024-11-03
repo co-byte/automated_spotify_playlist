@@ -9,7 +9,7 @@ from app.spotify.configuration.spotify_config import Api, Authorization, Playlis
 
 logger = get_logger(__name__)
 
-_ENCODING = "utf-8"
+_CONFIG_FILE_ENCODING = "utf-8"
 
 class ConfigParser:
     def __init__(self, spotify_config_file: pydantic.FilePath):
@@ -19,7 +19,7 @@ class ConfigParser:
         """Load and parse the Spotify configuration file."""
 
         try:
-            with open(self.__spotify_config_file, 'r', encoding=_ENCODING) as file:
+            with open(self.__spotify_config_file, 'r', encoding=_CONFIG_FILE_ENCODING) as file:
                 config_data = yaml.safe_load(file)
             return self.__parse_spotify_config(config_data)
 
@@ -28,7 +28,7 @@ class ConfigParser:
         except yaml.YAMLError as e:
             raise yaml.YAMLError(f"Error parsing YAML file: {e}") from e
 
-    def __parse_spotify_config(self, cfg: Dict[str, Any]) -> SpotifyConfig:
+    def __parse_spotify_config(self, cfg: Dict[str, Any]) -> SpotifyConfig: 
         try:
             playlist = Playlist(
                 name=cfg["playlist"]["name"],
@@ -40,15 +40,17 @@ class ConfigParser:
                 auth_url=auth_config["auth_url"],
                 redirect_url=auth_config["redirect_url"],
                 permissions=auth_config["permissions"],
-                token_url=auth_config["token_url"]
+                token_url=auth_config["token_url"],
+                user_auth_timemout_seconds=auth_config["user_auth_timemout_seconds"]
             )
-
             api = Api(
-                version=cfg["api"]["version"],
-                authorization=authorization
+                authorization=authorization,
+                version=cfg["api"]["version"]
             )
 
-            return SpotifyConfig(playlist=playlist, api=api)
+            spotify_config = SpotifyConfig(playlist=playlist, api=api)
+            logger.debug("Parsed Spotify config: %s", spotify_config)
+            return spotify_config
 
         except KeyError as e:
             raise KeyError(f"Missing key in Spotify configuration data: {e}") from e

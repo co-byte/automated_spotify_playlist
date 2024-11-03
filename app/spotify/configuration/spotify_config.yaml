@@ -8,3 +8,4 @@ api:
     redirect_url: "http://localhost:5000/users/authorization/redirect"
     permissions: "ugc-image-upload playlist-modify-public playlist-read-private"
     token_url: "https://accounts.spotify.com/api/token"
+    user_auth_timemout_seconds: 60

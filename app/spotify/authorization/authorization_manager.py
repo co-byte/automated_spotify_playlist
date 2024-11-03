@@ -8,7 +8,7 @@ import httpx
 
 from app.spotify.authorization.authorization_manager_config import AuthorizationManagerConfig
 from app.spotify.authorization.authorization_server import AuthorizationServer
-from app.spotify.authorization.tokens import AccessToken, Tokens
+from app.spotify.authorization.models.tokens import AccessToken, Tokens
 from app.logging.logger import get_logger
 
 
@@ -20,8 +20,10 @@ _USER_DATA_REQUEST_RESPONSE_TYPE = "code"
 _AUTHORIZATION_GRANT_TYPE = 'authorization_code'
 _REFRESH_TOKEN_GRANT_TYPE = 'refresh_token'
 
+
 class AuthorizationError(Exception):
     """Custom exception for handling authorization process failures."""
+
 
 class AuthorizationManager:
     def __init__(self, config: AuthorizationManagerConfig, authorization_server: AuthorizationServer, refresh_token: Optional[str] = None) -> None:

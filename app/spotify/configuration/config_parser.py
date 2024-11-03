@@ -20,16 +20,21 @@ class ConfigParser:
 
     def __load_spotify_config(self, config_file: pydantic.FilePath) -> SpotifyConfig:
         """Load and parse the Spotify configuration file."""
-
         try:
             with open(config_file, 'r', encoding=_CONFIG_FILE_ENCODING) as file:
                 config_data = yaml.safe_load(file)
+
+            if not isinstance(config_data, dict):
+                raise ValueError("The configuration file must contain a valid YAML dictionary structure.")
+
             return self.__parse_spotify_config(config_data)
 
         except FileNotFoundError as e:
             raise FileNotFoundError(f"Configuration file {config_file} not found.") from e
         except yaml.YAMLError as e:
             raise yaml.YAMLError(f"Error parsing YAML file: {e}") from e
+        except ValueError as e:
+            raise ValueError(f"Configuration file content error: {e}") from e
 
     def __parse_spotify_config(self, cfg: Dict[str, Any]) -> SpotifyConfig: 
         try:

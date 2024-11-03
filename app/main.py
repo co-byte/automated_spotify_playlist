@@ -6,7 +6,6 @@ from fastapi import FastAPI
 import uvicorn
 
 from app.spotify.environment.environment import Environment
-from app.spotify.environment.environment_manager import EnvironmentManager
 from app.logging.logger import get_logger
 from app.spotify.authorization.authorization_manager_config import AuthorizationManagerConfig
 from app.spotify.authorization.authorization_server import AuthorizationServer
@@ -26,9 +25,8 @@ logger = get_logger(__name__)
 
 
 async def setup_spotify_authorization(
-    spotify_client_id: str,
-    spotify_client_secret: str,
     spotify_config: SpotifyConfig,
+    environment: Environment,
     user_authorization_timeout_seconds: int
 ) -> AuthorizationManager:
 
@@ -42,14 +40,16 @@ async def setup_spotify_authorization(
     logger.info("Successfully set up authorization server.")
 
     auth_config = AuthorizationManagerConfig(
-        client_id=spotify_client_id,
-        client_secret=spotify_client_secret,
+        client_id=environment.spotify_client_id,
+        client_secret=environment.spotify_client_secret,
         auth_url=spotify_config.api.authorization.auth_url,
         token_url=spotify_config.api.authorization.token_url,
         redirect_url=spotify_config.api.authorization.redirect_url,
-        scope=spotify_config.api.authorization.permissions
+        scope=spotify_config.api.authorization.permissions,
+        authorization_server=auth_server,
+        environment=environment
     )
-    auth_manager = AuthorizationManager(auth_config, auth_server)
+    auth_manager = AuthorizationManager(auth_config)
     logger.info("Successfully set up authorization manager.")
 
     return auth_manager
@@ -57,7 +57,6 @@ async def setup_spotify_authorization(
 async def setup_spotify_manager(
     auth_manager: AuthorizationManager,
     env: Environment,
-    env_manager: EnvironmentManager,
     cfg: SpotifyConfig,
 ) -> SpotifyManager:
 
@@ -77,7 +76,7 @@ async def setup_spotify_manager(
         managed_playlist_is_public=True,
         managed_playlist_is_collaborative=False,
         managed_playlist_description="Automatically managed playlist V2.",
-        update_stored_automated_playlist_id=env_manager.update_managed_spotify_playlist_id
+        environment=env
     )
     spotify_manager = SpotifyManager(spotify_manager_config)
     logger.info("Successfully set up Spotify logic manager.")
@@ -97,20 +96,18 @@ async def update_managed_playlist(
 
 
 async def setup() -> Tuple[SpotifyManager, VRTMaxClient]:
-    env_manager = EnvironmentManager()
-    env = env_manager.load_from_env()
+    env = Environment()
 
     cfg_parser = ConfigParser(env.spotify_config_file)
     spotify_config = cfg_parser.parse()
 
     spotify_auth_manager = await setup_spotify_authorization(
-        spotify_client_id=env.spotify_client_id,
-        spotify_client_secret=env.spotify_client_secret,
+        environment=env,
         spotify_config=spotify_config,
         user_authorization_timeout_seconds = spotify_config.api.authorization.user_auth_timemout_seconds
     )
     spotify_manager = await setup_spotify_manager(
-        auth_manager=spotify_auth_manager, env=env, env_manager=env_manager, cfg=spotify_config
+        auth_manager=spotify_auth_manager, env=env, cfg=spotify_config
     )
 
     vrtmax_client_config = VRTMaxClientConfig()

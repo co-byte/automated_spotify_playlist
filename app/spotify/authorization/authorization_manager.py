@@ -26,10 +26,9 @@ class AuthorizationError(Exception):
 
 
 class AuthorizationManager:
-    def __init__(self, config: AuthorizationManagerConfig, authorization_server: AuthorizationServer, refresh_token: Optional[str] = None) -> None:
-        self.__tokens = Tokens(access_token=None, refresh_token=refresh_token)
-        self.__auth_server = authorization_server
+    def __init__(self, config: AuthorizationManagerConfig) -> None:
         self.__config = config
+        self.__tokens = Tokens(access_token=None, refresh_token=self.__config.environment.spotify_client_refresh_token)
         logger.debug("AuthorizationManager initialized with client ID: %s", self.__config.client_id)
 
     async def build_authorization_headers(self) -> httpx.Headers:
@@ -71,11 +70,14 @@ class AuthorizationManager:
         state = await self.__request_authorization_to_access_user_data()
         logger.debug("Synchronization state received: %s", state)
 
-        auth_code = await self.__auth_server.get_authorization_code(state)
+        auth_code = await self.__config.authorization_server.get_authorization_code(state)
         logger.debug("Authorization code retrieved: %s", auth_code)
 
         tokens = await self.__request_new_tokens(auth_code)
         logger.debug("New tokens received: %s", tokens)
+
+        # Update the environment variable
+        self.__config.environment.spotify_client_refresh_token = tokens.refresh_token
 
         return tokens
 

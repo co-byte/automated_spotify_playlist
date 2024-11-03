@@ -9,7 +9,7 @@ from app.spotify.configuration.spotify_config import Api, Authorization, Playlis
 
 logger = get_logger(__name__)
 
-_CONFIG_FILE_ENCODING = "utf-8"
+_CONFIG_FILE_ENCODING = "UTF-8"
 
 class ConfigParser:
     def __init__(self, spotify_config_file: pydantic.FilePath):
@@ -21,6 +21,7 @@ class ConfigParser:
     def __load_spotify_config(self, config_file: pydantic.FilePath) -> SpotifyConfig:
         """Load and parse the Spotify configuration file."""
         try:
+            logger.debug("Attempting to load Spotify configurations from '%s'.", config_file)
             with open(config_file, 'r', encoding=_CONFIG_FILE_ENCODING) as file:
                 config_data = yaml.safe_load(file)
 

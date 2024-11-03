@@ -101,7 +101,7 @@ async def setup() -> Tuple[SpotifyManager, VRTMaxClient]:
     env = env_manager.load_from_env()
 
     cfg_parser = ConfigParser(env.spotify_config_file)
-    spotify_config = cfg_parser.load_spotify_config()
+    spotify_config = cfg_parser.parse()
 
     spotify_auth_manager = await setup_spotify_authorization(
         spotify_client_id=env.spotify_client_id,

@@ -13,18 +13,21 @@ _CONFIG_FILE_ENCODING = "utf-8"
 
 class ConfigParser:
     def __init__(self, spotify_config_file: pydantic.FilePath):
-        self.__spotify_config_file = spotify_config_file
+        self.__config = self.__load_spotify_config(spotify_config_file)
 
-    def load_spotify_config(self) -> SpotifyConfig:
+    def parse(self) -> SpotifyConfig:
+        return self.__config
+
+    def __load_spotify_config(self, config_file: pydantic.FilePath) -> SpotifyConfig:
         """Load and parse the Spotify configuration file."""
 
         try:
-            with open(self.__spotify_config_file, 'r', encoding=_CONFIG_FILE_ENCODING) as file:
+            with open(config_file, 'r', encoding=_CONFIG_FILE_ENCODING) as file:
                 config_data = yaml.safe_load(file)
             return self.__parse_spotify_config(config_data)
 
         except FileNotFoundError as e:
-            raise FileNotFoundError(f"Configuration file {self.__spotify_config_file} not found.") from e
+            raise FileNotFoundError(f"Configuration file {config_file} not found.") from e
         except yaml.YAMLError as e:
             raise yaml.YAMLError(f"Error parsing YAML file: {e}") from e
 

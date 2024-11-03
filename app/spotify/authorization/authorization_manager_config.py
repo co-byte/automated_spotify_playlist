@@ -1,14 +1,21 @@
 from __future__ import annotations
+import json
 from dataclasses import dataclass
+
 
 @dataclass
 class AuthorizationManagerConfig:
+    # Client credentials
     client_id: str
     client_secret: str
+
+    # Initial authorization
     auth_url: str
-    token_url: str
     redirect_url: str
     scope: str
+
+    # Tokens
+    token_url: str
 
     @classmethod
     def from_dict(cls, config_data: dict[str, str]) -> AuthorizationManagerConfig:
@@ -33,15 +40,7 @@ class AuthorizationManagerConfig:
             "scope": self.scope,
         }
 
-def __str__(self) -> str:
-    masked_secret = f"{self.client_secret[:4]}****" if self.client_secret else ""
-    return (
-        f"AuthorizationManagerConfig(\n"
-        f"  client_id: {self.client_id},\n"
-        f"  client_secret: {masked_secret},\n"
-        f"  auth_url: {self.auth_url},\n"
-        f"  token_url: {self.token_url},\n"
-        f"  redirect_url: {self.redirect_url},\n"
-        f"  scope: {self.scope}\n"
-        ")"
-    )
+    def __str__(self) -> str:
+        data = self.to_dict()
+        data["client_secret"] = f"{self.client_secret[:4]}****" if self.client_secret else ""
+        return json.dumps(data, indent=4)

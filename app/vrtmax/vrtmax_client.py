@@ -1,3 +1,4 @@
+import json
 from typing import Any, Dict, Set
 
 import httpx
@@ -63,7 +64,15 @@ class VRTMaxClient:
             for edge in response.data.tracks.edges
         )
 
-        logger.debug("Succesfully processed the following tracks: %s", tracks)
+        # Log the first 5 tracks completely and display the remaining track count
+        display_tracks = list(tracks)[:5]
+        tracks_json = "\n".join(str(track) for track in display_tracks)
+        logger.debug(
+            "Successfully processed the following tracks:\n%s\n%s",
+            tracks_json,
+            f"and {len(tracks) - 5} more" if len(tracks) > 5 else ""
+        )
+
         return tracks
 
     def ingest_new_tracks(self) -> Set[ExternalTrack]:

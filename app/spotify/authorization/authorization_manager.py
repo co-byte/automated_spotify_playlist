@@ -19,7 +19,6 @@ _TOKEN_REQUEST_CONTENT_TYPE = 'application/x-www-form-urlencoded'
 _USER_DATA_REQUEST_RESPONSE_TYPE = "code"
 _AUTHORIZATION_GRANT_TYPE = 'authorization_code'
 _REFRESH_TOKEN_GRANT_TYPE = 'refresh_token'
-_REQUEST_TIMEOUT_SECONDS = 5
 
 class AuthorizationError(Exception):
     """Custom exception for handling authorization process failures."""
@@ -92,8 +91,7 @@ class AuthorizationManager:
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 self.__config.auth_url,
-                params=params,
-                timeout=_REQUEST_TIMEOUT_SECONDS
+                params=params
                 )
 
             webbrowser.get().open(f"{response.url}")
@@ -147,8 +145,8 @@ class AuthorizationManager:
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     url=self.__config.token_url,
-                    data=parameters, headers=headers,
-                    timeout=_REQUEST_TIMEOUT_SECONDS
+                    data=parameters,
+                    headers=headers
                     )
                 logger.debug("Token request response status: %s", response.status_code)
 

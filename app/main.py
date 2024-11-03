@@ -39,12 +39,12 @@ async def setup_spotify_authorization(
     logger.info("Successfully set up authorization server.")
 
     auth_config = AuthorizationManagerConfig(
-        spotify_client_id,
-        spotify_client_secret,
-        spotify_config.api.authorization.auth_url,
-        spotify_config.api.authorization.token_url,
-        spotify_config.api.authorization.redirect_url,
-        spotify_config.api.authorization.permissions
+        client_id=spotify_client_id,
+        client_secret=spotify_client_secret,
+        auth_url=spotify_config.api.authorization.auth_url,
+        token_url=spotify_config.api.authorization.token_url,
+        redirect_url=spotify_config.api.authorization.redirect_url,
+        scope=spotify_config.api.authorization.permissions
     )
     auth_manager = AuthorizationManager(auth_config, auth_server)
     logger.info("Successfully set up authorization manager.")

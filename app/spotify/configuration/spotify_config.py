@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
+import json
 
 
 @dataclass
@@ -7,11 +8,7 @@ class Playlist:
     description: str
 
     def __str__(self):
-        return (
-            f"Playlist:\n"
-            f"  name: '{self.name}'\n"
-            f"  description: '{self.description}'"
-        )
+        return json.dumps(asdict(self), indent=2)
 
 
 @dataclass
@@ -20,15 +17,10 @@ class Authorization:
     redirect_url: str
     permissions: str
     token_url: str
+    user_auth_timemout_seconds: int
 
     def __str__(self):
-        return (
-            f"Authorization:\n"
-            f"  url: '{self.auth_url}'\n"
-            f"  redirect_url: '{self.redirect_url}'\n"
-            f"  permissions: '{self.permissions}'\n"
-            f"  token_url: '{self.token_url}'"
-        )
+        return json.dumps(asdict(self), indent=2)
 
 
 @dataclass
@@ -37,11 +29,7 @@ class Api:
     authorization: Authorization
 
     def __str__(self):
-        return (
-            f"Api:\n"
-            f"  version: '{self.version}'\n"
-            f"  authorization: {self.authorization}"
-        )
+        return json.dumps(asdict(self), indent=2)
 
 
 @dataclass
@@ -50,8 +38,4 @@ class SpotifyConfig:
     api: Api
 
     def __str__(self):
-        return (
-            f"SpotifyConfig:\n"
-            f"  playlist: {self.playlist}\n"
-            f"  api: {self.api}"
-        )
+        return json.dumps(asdict(self), indent=2)

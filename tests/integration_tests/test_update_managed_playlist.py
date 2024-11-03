@@ -1,6 +1,8 @@
 import pytest
 from app.main import setup, update_managed_playlist
 
+
+@pytest.mark.filterwarnings("ignore::DeprecationWarning: httpx._content") # Ignore warning caused by the external package
 @pytest.mark.asyncio
 async def test_application_run():
     """

@@ -2,13 +2,12 @@ import base64
 import secrets
 import urllib.parse
 import webbrowser
-from typing import Dict, Optional
+from typing import Dict
 
 import httpx
 
 from app.spotify.authorization.authorization_manager_config import AuthorizationManagerConfig
-from app.spotify.authorization.authorization_server import AuthorizationServer
-from app.spotify.authorization.tokens import AccessToken, Tokens
+from app.spotify.authorization.models.tokens import AccessToken, Tokens
 from app.logging.logger import get_logger
 
 
@@ -19,16 +18,16 @@ _TOKEN_REQUEST_CONTENT_TYPE = 'application/x-www-form-urlencoded'
 _USER_DATA_REQUEST_RESPONSE_TYPE = "code"
 _AUTHORIZATION_GRANT_TYPE = 'authorization_code'
 _REFRESH_TOKEN_GRANT_TYPE = 'refresh_token'
-_REQUEST_TIMEOUT_SECONDS = 5
+
 
 class AuthorizationError(Exception):
     """Custom exception for handling authorization process failures."""
 
+
 class AuthorizationManager:
-    def __init__(self, config: AuthorizationManagerConfig, authorization_server: AuthorizationServer, refresh_token: Optional[str] = None) -> None:
-        self.__tokens = Tokens(access_token=None, refresh_token=refresh_token)
-        self.__auth_server = authorization_server
+    def __init__(self, config: AuthorizationManagerConfig) -> None:
         self.__config = config
+        self.__tokens = Tokens(access_token=None, refresh_token=self.__config.environment.spotify_client_refresh_token)
         logger.debug("AuthorizationManager initialized with client ID: %s", self.__config.client_id)
 
     async def build_authorization_headers(self) -> httpx.Headers:
@@ -70,11 +69,14 @@ class AuthorizationManager:
         state = await self.__request_authorization_to_access_user_data()
         logger.debug("Synchronization state received: %s", state)
 
-        auth_code = await self.__auth_server.get_authorization_code(state)
+        auth_code = await self.__config.authorization_server.get_authorization_code(state)
         logger.debug("Authorization code retrieved: %s", auth_code)
 
         tokens = await self.__request_new_tokens(auth_code)
         logger.debug("New tokens received: %s", tokens)
+
+        # Update the environment variable
+        self.__config.environment.spotify_client_refresh_token = tokens.refresh_token
 
         return tokens
 
@@ -92,8 +94,7 @@ class AuthorizationManager:
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 self.__config.auth_url,
-                params=params,
-                timeout=_REQUEST_TIMEOUT_SECONDS
+                params=params
                 )
 
             webbrowser.get().open(f"{response.url}")
@@ -147,8 +148,8 @@ class AuthorizationManager:
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     url=self.__config.token_url,
-                    data=parameters, headers=headers,
-                    timeout=_REQUEST_TIMEOUT_SECONDS
+                    data=parameters,
+                    headers=headers
                     )
                 logger.debug("Token request response status: %s", response.status_code)
 

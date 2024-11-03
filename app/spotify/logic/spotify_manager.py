@@ -93,7 +93,7 @@ class SpotifyManager:
 
                 # Update both local and environment variables
                 self.__config.managed_playlist_id = new_playlist.id
-                self.__config.update_stored_automated_playlist_id(new_playlist.id)
+                self.__config.managed_playlist_id = new_playlist.id
             else:
                 logger.info("Managed playlist found. Updating with new tracks.")
 

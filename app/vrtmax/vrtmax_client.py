@@ -1,14 +1,16 @@
+import json
 from typing import Any, Dict, Set
 
 import httpx
 
 from app.logging.logger import get_logger
 from app.models.external_track import ExternalTrack
+from app.vrtmax.config.vrtmax_client_config import VRTMaxClientConfig
 from app.vrtmax.models.graphql_response import ComponentData, GraphQLResponse, TrackEdge, TrackItem, TrackList
-from app.vrtmax.vrtmax_client_config import VRTMaxClientConfig
 
 
 logger = get_logger(__name__)
+
 
 class VRTMaxClient:
     def __init__(self, config: VRTMaxClientConfig):
@@ -62,9 +64,16 @@ class VRTMaxClient:
             for edge in response.data.tracks.edges
         )
 
-        logger.debug("Succesfully processed the following tracks: %s", tracks)
-        return tracks
+        # Log the first 5 tracks completely and display the remaining track count
+        display_tracks = list(tracks)[:5]
+        tracks_json = "\n".join(str(track) for track in display_tracks)
+        logger.debug(
+            "Successfully processed the following tracks:\n%s\n%s",
+            tracks_json,
+            f"and {len(tracks) - 5} more" if len(tracks) > 5 else ""
+        )
 
+        return tracks
 
     def ingest_new_tracks(self) -> Set[ExternalTrack]:
         """Main function to fetch, parse, and log track data."""

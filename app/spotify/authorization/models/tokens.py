@@ -18,6 +18,7 @@ class Tokens:
             self.refresh_token = new_tokens.refresh_token
         self.access_token = new_tokens.access_token
 
+
 @dataclass
 class AccessToken:
     token: str

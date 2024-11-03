@@ -1,0 +1,11 @@
+playlist:
+  name: "Todays generated playlist"
+  description: "Automatically managed playlist (V2)."
+api:
+  version: 'v1'
+  authorization:    
+    auth_url: "https://accounts.spotify.com/authorize"
+    redirect_url: "http://localhost:5000/users/authorization/redirect"
+    permissions: "ugc-image-upload playlist-modify-public playlist-read-private"
+    token_url: "https://accounts.spotify.com/api/token"
+    user_auth_timemout_seconds: 60

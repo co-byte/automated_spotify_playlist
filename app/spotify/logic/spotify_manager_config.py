@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from typing import Callable, Optional
+from typing import Optional
 
+from app.spotify.environment.environment import Environment
 from app.spotify.requests.repository.playlist_handler import PlaylistHandler
 from app.spotify.requests.repository.search_handler import SearchHandler
 
@@ -19,4 +20,4 @@ class SpotifyManagerConfig:
     managed_playlist_is_collaborative: bool
 
     # Callback function to persistently store the automated playlist id
-    update_stored_automated_playlist_id: Callable[[str], None]
+    environment: Environment

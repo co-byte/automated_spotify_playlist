@@ -1,6 +1,7 @@
+import argparse
 import asyncio
 import datetime
-from typing import Tuple
+from typing import Optional, Tuple
 
 from fastapi import FastAPI
 import uvicorn
@@ -10,6 +11,7 @@ from app.logging.logger import get_logger
 from app.spotify.authorization.authorization_manager_config import AuthorizationManagerConfig
 from app.spotify.authorization.authorization_server import AuthorizationServer
 from app.spotify.configuration.config_parser import ConfigParser
+from app.spotify.environment.environment_types import EnvironmentTypes
 from app.spotify.logic.spotify_manager import SpotifyManager
 from app.spotify.logic.spotify_manager_config import SpotifyManagerConfig
 from app.spotify.requests.repository.api_client.api_client import ApiClient
@@ -94,9 +96,8 @@ async def update_managed_playlist(
     except Exception as e:
         logger.error("Unable to update the managed playlist: %s", str(e))
 
-
-async def setup() -> Tuple[SpotifyManager, VRTMaxClient]:
-    env = Environment()
+async def setup(environment: EnvironmentTypes) -> Tuple[SpotifyManager, VRTMaxClient]:
+    env = Environment(environment)
 
     cfg_parser = ConfigParser(env.spotify_config_file)
     spotify_config = cfg_parser.parse()
@@ -117,7 +118,14 @@ async def setup() -> Tuple[SpotifyManager, VRTMaxClient]:
     return (spotify_manager, vrtmax_client)
 
 async def main() -> None:
-    spotify_manager, vrtmax_client = await setup()
+    parser = argparse.ArgumentParser(description='Run the Spotify application.')
+    parser.add_argument('--env', type=str, required=False, help="Environment to run the application ('development' or 'production')")
+
+    # Retrieve the environment type
+    env_arg: Optional[str] = parser.parse_args().env
+    env_type = EnvironmentTypes(env_arg) if env_arg else EnvironmentTypes.DEVELOPMENT
+
+    spotify_manager, vrtmax_client = await setup(env_type)
 
     # Update the managed playlist indefinitely once every day
     while True:

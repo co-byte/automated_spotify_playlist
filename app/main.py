@@ -71,14 +71,13 @@ async def setup_spotify_manager(
     logger.info("Successfully set up Spotify implementation handlers.")
 
     spotify_manager_config = SpotifyManagerConfig(
-        playlist_handler=playlist_handler,
-        search_handler=search_handler,
-        managed_playlist_id=env.spotify_playlist_id,
+        environment=env,
         managed_playlist_name=cfg.playlist.name,
         managed_playlist_is_public=True,
-        managed_playlist_is_collaborative=False,
         managed_playlist_description="Automatically managed playlist V2.",
-        environment=env
+        managed_playlist_is_collaborative=False,
+        playlist_handler=playlist_handler,
+        search_handler=search_handler,
     )
     spotify_manager = SpotifyManager(spotify_manager_config)
     logger.info("Successfully set up Spotify logic manager.")

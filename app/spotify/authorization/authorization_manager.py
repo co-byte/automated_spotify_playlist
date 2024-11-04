@@ -51,11 +51,14 @@ class AuthorizationManager:
 
         # Option 2: Refresh tokens
         if self.__tokens and self.__tokens.refresh_token:
-            logger.info("Attempting to refresh tokens.")
-            self.__tokens = await self.__refresh_tokens()
+            try:
+                logger.info("Attempting to refresh tokens.")
+                self.__tokens = await self.__refresh_tokens()
 
-            logger.info("A refreshed access token was provided.")
-            return self.__tokens.access_token
+                logger.info("A refreshed access token was provided.")
+                return self.__tokens.access_token
+            except ValueError as ve:
+                logger.warning("Unable to refresh tokens: %s",  str(ve))
 
         # Option 3: Full user authorization
         self.__tokens = await self.__perform_full_authorization()

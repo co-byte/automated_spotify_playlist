@@ -1,15 +1,24 @@
-import json
 from typing import Any, Dict, Set
 
 import httpx
 
-from app.logging.logger import get_logger
-from app.models.external_track import ExternalTrack
-from app.vrtmax.config.vrtmax_client_config import VRTMaxClientConfig
-from app.vrtmax.models.graphql_response import ComponentData, GraphQLResponse, TrackEdge, TrackItem, TrackList
+from app.vrtmax_service.logging.logger import get_logger
+from app.vrtmax_service.models.external_track import ExternalTrack
+from app.vrtmax_service.config.vrtmax_client_config import VRTMaxClientConfig
+from app.vrtmax_service.models.graphql_response import (
+    ComponentData,
+    GraphQLResponse,
+    TrackEdge,
+    TrackItem,
+    TrackList,
+)
 
 
 logger = get_logger(__name__)
+
+
+class VRTMaxClientError(Exception):
+    """Custom exception for handling VRTMaxClient failures."""
 
 
 class VRTMaxClient:
@@ -30,8 +39,8 @@ class VRTMaxClient:
             url=self.__config.api_url,
             headers=self.__config.headers,
             json=payload,
-            timeout=10
-            )
+            timeout=10,
+        )
         response.raise_for_status()
         return response.json()
 
@@ -70,7 +79,7 @@ class VRTMaxClient:
         logger.debug(
             "Successfully processed the following tracks:\n%s\n%s",
             tracks_json,
-            f"and {len(tracks) - 5} more" if len(tracks) > 5 else ""
+            f"and {len(tracks) - 5} more" if len(tracks) > 5 else "",
         )
 
         return tracks
@@ -91,6 +100,7 @@ class VRTMaxClient:
                 str(e),
                 e.response.status_code,
             )
+            raise VRTMaxClientError("Unable to ingest new tracks.") from e
 
         except httpx.RequestError as e:
             logger.error(
@@ -98,3 +108,4 @@ class VRTMaxClient:
                 self.__config.api_url,
                 str(e),
             )
+            raise VRTMaxClientError("Unable to ingest new tracks.") from e

@@ -19,8 +19,8 @@ from app.spotify.requests.repository.api_client.api_client_config import ApiClie
 from app.spotify.requests.repository.playlist_handler import PlaylistHandler
 from app.spotify.requests.repository.search_handler import SearchHandler
 from app.spotify.authorization.authorization_manager import AuthorizationManager
-from app.vrtmax.vrtmax_client import VRTMaxClient
-from app.vrtmax.config.vrtmax_client_config import VRTMaxClientConfig
+from app.vrtmax_service.vrtmax.vrtmax_client import VRTMaxClient
+from app.vrtmax_service.config.vrtmax_client_config import VRTMaxClientConfig
 from app.spotify.configuration.spotify_config import SpotifyConfig
 
 logger = get_logger(__name__)
@@ -109,7 +109,7 @@ async def setup(environment: EnvironmentTypes) -> Tuple[SpotifyManager, VRTMaxCl
     spotify_manager = await setup_spotify_manager(
         auth_manager=spotify_auth_manager, env=env, cfg=spotify_config
     )
-
+    
     vrtmax_client_config = VRTMaxClientConfig()
     vrtmax_client = VRTMaxClient(vrtmax_client_config)
     logger.info("Successfully set up VRTMax client.")

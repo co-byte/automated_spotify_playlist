@@ -1,9 +1,10 @@
 from dataclasses import dataclass, field
 from typing import Annotated
+import pydantic
 
 import httpx
-import pydantic
-from app.vrtmax.config.constants import API_URL, COMPONENT_ID, FETCHED_TRACK_COUNT, HEADERS, GET_SONGS_AND_ARTISTS_QUERY
+
+from app.vrtmax_service.config.constants import API_URL, COMPONENT_ID, FETCHED_TRACK_COUNT, HEADERS, GET_SONGS_AND_ARTISTS_QUERY
 
 
 @dataclass

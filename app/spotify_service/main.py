@@ -1,27 +1,29 @@
 import argparse
 import asyncio
 import datetime
-from typing import Optional, Tuple
+from typing import List, Optional
 
 from fastapi import FastAPI
 import uvicorn
 
-from app.logging.logger import get_logger
+from app.spotify_service.models.external_track import ExternalTrack
 from app.spotify_service.environment.environment import Environment
-from app.spotify_service.authorization.authorization_manager_config import AuthorizationManagerConfig
+from app.spotify_service.logging.logger import get_logger
+from app.spotify_service.authorization.authorization_manager_config import (
+    AuthorizationManagerConfig,
+)
 from app.spotify_service.authorization.authorization_server import AuthorizationServer
 from app.spotify_service.configuration.config_parser import ConfigParser
 from app.spotify_service.environment.environment_types import EnvironmentTypes
 from app.spotify_service.logic.spotify_manager import SpotifyManager
 from app.spotify_service.logic.spotify_manager_config import SpotifyManagerConfig
-from app.spotify_service.requests.repository.api_client.api_client import ApiClient
-from app.spotify_service.requests.repository.api_client.api_client_config import ApiClientConfig
-from app.spotify_service.requests.repository.playlist_handler import PlaylistHandler
-from app.spotify_service.requests.repository.search_handler import SearchHandler
+from app.spotify_service.repository.api_client.api_client import ApiClient
+from app.spotify_service.repository.api_client.api_client_config import ApiClientConfig
+from app.spotify_service.repository.playlist_handler import PlaylistHandler
+from app.spotify_service.repository.search_handler import SearchHandler
 from app.spotify_service.authorization.authorization_manager import AuthorizationManager
 from app.spotify_service.configuration.spotify_config import SpotifyConfig
-from app.vrtmax_service.vrtmax.vrtmax_client import VRTMaxClient
-from app.vrtmax_service.config.vrtmax_client_config import VRTMaxClientConfig
+
 
 logger = get_logger(__name__)
 
@@ -29,16 +31,18 @@ logger = get_logger(__name__)
 async def setup_spotify_authorization(
     spotify_config: SpotifyConfig,
     environment: Environment,
-    user_authorization_timeout_seconds: int
+    user_authorization_timeout_seconds: int,
 ) -> AuthorizationManager:
 
     auth_server_config = uvicorn.Config(
         FastAPI(),
         host="localhost",
         port=5000,
-        log_level="critical"  # Minimize logging output for auth server
+        log_level="critical",  # Minimize logging output for auth server
     )
-    auth_server = AuthorizationServer(auth_server_config, user_authorization_timeout_seconds)
+    auth_server = AuthorizationServer(
+        auth_server_config, user_authorization_timeout_seconds
+    )
     logger.info("Successfully set up authorization server.")
 
     auth_config = AuthorizationManagerConfig(
@@ -49,12 +53,13 @@ async def setup_spotify_authorization(
         redirect_url=spotify_config.api.authorization.redirect_url,
         scope=spotify_config.api.authorization.permissions,
         authorization_server=auth_server,
-        environment=environment
+        environment=environment,
     )
     auth_manager = AuthorizationManager(auth_config)
     logger.info("Successfully set up authorization manager.")
 
     return auth_manager
+
 
 async def setup_spotify_manager(
     auth_manager: AuthorizationManager,
@@ -84,18 +89,19 @@ async def setup_spotify_manager(
 
     return spotify_manager
 
+
 async def update_managed_playlist(
-    spotify_manager: SpotifyManager, vrtmax_client: VRTMaxClient
+    spotify_manager: SpotifyManager, new_tracks: List[ExternalTrack]
 ) -> None:
     try:
-        new_tracks = vrtmax_client.ingest_new_tracks()
         await spotify_manager.update_managed_playlist(new_tracks)
         logger.info("Successfully updated the managed playlist.")
 
     except Exception as e:
         logger.error("Unable to update the managed playlist: %s", str(e))
 
-async def setup(environment: EnvironmentTypes) -> Tuple[SpotifyManager, VRTMaxClient]:
+
+async def setup(environment: EnvironmentTypes) -> SpotifyManager:
     env = Environment(environment)
 
     cfg_parser = ConfigParser(env.spotify_config_file)
@@ -104,32 +110,44 @@ async def setup(environment: EnvironmentTypes) -> Tuple[SpotifyManager, VRTMaxCl
     spotify_auth_manager = await setup_spotify_authorization(
         environment=env,
         spotify_config=spotify_config,
-        user_authorization_timeout_seconds = spotify_config.api.authorization.user_auth_timemout_seconds
+        user_authorization_timeout_seconds=spotify_config.api.authorization.user_auth_timemout_seconds,
     )
     spotify_manager = await setup_spotify_manager(
         auth_manager=spotify_auth_manager, env=env, cfg=spotify_config
     )
-    
-    vrtmax_client_config = VRTMaxClientConfig()
-    vrtmax_client = VRTMaxClient(vrtmax_client_config)
-    logger.info("Successfully set up VRTMax client.")
 
-    return (spotify_manager, vrtmax_client)
+    return spotify_manager
+
 
 async def main() -> None:
-    parser = argparse.ArgumentParser(description='Run the Spotify application.')
-    parser.add_argument('--env', type=str, required=False, help="Environment to run the application ('development' or 'production')")
+    parser = argparse.ArgumentParser(description="Run the Spotify application.")
+    parser.add_argument(
+        "--env",
+        type=str,
+        required=False,
+        help="Environment to run the application ('development' or 'production')",
+    )
 
     # Retrieve the environment type
     env_arg: Optional[str] = parser.parse_args().env
     env_type = EnvironmentTypes(env_arg) if env_arg else EnvironmentTypes.DEVELOPMENT
 
-    spotify_manager, vrtmax_client = await setup(env_type)
+    spotify_manager = await setup(env_type)
+
+    hardcoded_tracks = [
+        ExternalTrack("Bonkers (live)", "Bizkit Park"),
+        ExternalTrack("No Stress", "Laurent Wolf"),
+        ExternalTrack("You Know I'm No Good", "Arctic Monkeys"),
+        ExternalTrack("Sun In Her Eyes", "Tom Helsen"),
+        ExternalTrack("First It Giveth", "Queens Of The Stone Age"),
+        ExternalTrack("Nieuws Studio Brussel", None),
+        ExternalTrack("Squeeze Me", "Kraak & Smaak Ft Ben Westbeech"),
+    ]
 
     # Update the managed playlist indefinitely once every day
     while True:
         await update_managed_playlist(
-            spotify_manager=spotify_manager, vrtmax_client=vrtmax_client
+            spotify_manager=spotify_manager, new_tracks=hardcoded_tracks
         )
         await asyncio.sleep(datetime.timedelta(days=1).total_seconds())
 

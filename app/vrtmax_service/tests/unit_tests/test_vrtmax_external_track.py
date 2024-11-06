@@ -1,6 +1,6 @@
 import pytest
 
-from app.models.external_track import ExternalTrack
+from app.vrtmax_service.models.external_track import ExternalTrack
 
 def test_external_track_equality():
     # Create two ExternalTrack instances with the same attributes

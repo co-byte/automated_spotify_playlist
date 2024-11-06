@@ -7,7 +7,7 @@ from app.spotify_service.configuration.config_parser import ConfigParser
 @pytest.fixture
 def temp_spotify_config_file():
     """Fixture to create and remove a temporary YAML configuration file for testing."""
-    
+
     path_to_config = "test_spotify_config.yaml"
     test_content = {
         "playlist": {

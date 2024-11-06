@@ -1,0 +1,58 @@
+asyncapi: 3.0.0
+info:
+  title: Track Publishing Service
+  version: 1.0.0
+  description: >
+    This AsyncAPI document describes a messaging interface between two
+    microservices: the VRTMax-service publishes 'Track' information (track_name and
+    artist) to a Kafka topic, and the Spotify-service consumes it.
+
+servers:
+  kafkaServer:
+    host: localhost:9092
+    description: Kafka broker
+    protocol: kafka
+
+channels:
+  track-updates:
+    description: Channel for publishing and subscribing to track updates.
+    address: track_updates
+    messages:
+      TrackMessage:
+        $ref: '#/components/messages/TrackMessage'
+
+
+operations:
+  publishTrack:
+    action: send
+    channel:
+      $ref: '#/channels/track-updates'
+    summary: Publish track updates
+    description: VRTMax-service publishes track updates to the topic.
+    messages:
+      - $ref: '#/channels/track-updates/messages/TrackMessage'
+  receiveTrack:
+    action: receive
+    channel:
+      $ref: '#/channels/track-updates'
+    summary: Subscribe to track updates
+    description: Spotify-service subscribes to receive Track information.
+    messages:
+      - $ref: '#/channels/track-updates/messages/TrackMessage'
+
+components:
+  messages:
+    TrackMessage:
+      name: TrackMessage
+      title: Track Information Message
+      summary: Contains information about a track.
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          track_name:
+            type: string
+            description: Name of the track
+          artist:
+            type: string
+            description: Name of the artist

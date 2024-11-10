@@ -1,0 +1,47 @@
+services:
+  kafka:
+    container_name: kafka_broker
+    image: bitnami/kafka:latest
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_TOPIC="track_updates"  # Define the topic to use as per AsyncAPI
+    volumes:
+      - kafka_data:/bitnami/kafka/data
+    networks:
+      - internal_network
+
+  spotify-service:
+    container_name: spotify-service
+    build:
+      context: ./services/spotify_service
+    ports:
+      - 8001:8000
+    networks:
+      - internal_network
+      - external_network
+    restart: on-failure:1
+
+  vrtmax-service:
+    container_name: vrtmax-service
+    build:
+      context: ./services/vrtmax_service
+    networks:
+      - internal_network
+    restart: on-failure:1
+
+volumes:
+  kafka_data:
+    driver: local
+
+networks:
+  internal_network:
+    driver: bridge #TODO: Change to an internal-only network
+  external_network:
+    driver: bridge

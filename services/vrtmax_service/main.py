@@ -1,9 +1,7 @@
 import asyncio
 import datetime
 
-from services.vrtmax_service.logging.logger import get_logger
-from services.vrtmax_service.config.vrtmax_client_config import VRTMaxClientConfig
-from services.vrtmax_service.vrtmax.vrtmax_client import VRTMaxClient, VRTMaxClientError
+from vrtmax import get_logger, VRTMaxClient, VRTMaxClientError, VRTMaxClientConfig
 
 
 logger = get_logger(__name__)

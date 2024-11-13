@@ -2,10 +2,10 @@ from typing import Any, Dict, Set
 
 import httpx
 
-from services.vrtmax_service.logging.logger import get_logger
-from services.vrtmax_service.models.external_track import ExternalTrack
-from services.vrtmax_service.config.vrtmax_client_config import VRTMaxClientConfig
-from services.vrtmax_service.models.graphql_response import (
+from vrtmax.log_utils.logger import get_logger
+from vrtmax.config.vrtmax_client_config import VRTMaxClientConfig
+from vrtmax.models.external_track import ExternalTrack
+from vrtmax.models.graphql_response import (
     ComponentData,
     GraphQLResponse,
     TrackEdge,

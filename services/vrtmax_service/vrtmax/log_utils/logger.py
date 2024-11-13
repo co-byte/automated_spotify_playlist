@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 
+
 _LOG_LEVEL_WIDTH = 8                # Longest level ('CRITICAL') contains 8 chars
 _LOG_LOCATION_WIDTH = 35            # Width for filename and line number for alignment
 _LOG_METHOD_WIDTH = 30              # Width for method names for alignment
@@ -13,6 +14,7 @@ _LOG_COLORS = {
     "RESET": "\033[0m"              # Reset to default
     }
 
+
 class CustomFormatter(logging.Formatter):
     """Custom logging format that includes time, class, method, and colored output."""
 
@@ -22,7 +24,7 @@ class CustomFormatter(logging.Formatter):
         log_level = record.levelname.center(_LOG_LEVEL_WIDTH)
         log_location = f"{record.filename}:{record.lineno}".ljust(_LOG_LOCATION_WIDTH)
         log_method = f"{record.funcName}".ljust(_LOG_METHOD_WIDTH)
-       
+
         log_msg = f"{log_time} | {log_location} | {log_method} | {log_level} | {record.getMessage()}"
 
         # Apply color based on the log level using ANSI escape codes

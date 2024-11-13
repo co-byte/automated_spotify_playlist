@@ -1,6 +1,6 @@
 services:
-  kafka:
-    container_name: kafka_broker
+  kafka-broker:
+    container_name: kafka-broker
     image: bitnami/kafka:latest
     ports:
       - "9092:9092"
@@ -9,13 +9,22 @@ services:
       - KAFKA_CFG_PROCESS_ROLES=controller,broker
       - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_TOPIC="track_updates"  # Define the topic to use as per AsyncAPI
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-broker:9093
     volumes:
       - kafka_data:/bitnami/kafka/data
     networks:
       - internal_network
+  
+  kafka-setup-service:
+    container_name: kafka-setup-service
+    build:
+      context: ./services/kafka-setup-service
+    depends_on:
+      - kafka-broker
+    networks:
+      - internal_network
+    restart: on-failure:1
 
   spotify-service:
     container_name: spotify-service

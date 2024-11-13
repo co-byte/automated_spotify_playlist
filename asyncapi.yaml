@@ -21,7 +21,6 @@ channels:
       TrackMessage:
         $ref: '#/components/messages/TrackMessage'
 
-
 operations:
   publishTrack:
     action: send

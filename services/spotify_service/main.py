@@ -3,36 +3,19 @@ import asyncio
 import datetime
 from typing import List, Optional
 
-from fastapi import FastAPI
 import uvicorn
+from fastapi import FastAPI
 
-from services.spotify_service.models.external_track import ExternalTrack
-from services.spotify_service.environment.environment import Environment
-from services.spotify_service.logging.logger import get_logger
-from services.spotify_service.authorization.authorization_manager_config import (
-    AuthorizationManagerConfig,
-)
-from services.spotify_service.authorization.authorization_server import AuthorizationServer
-from services.spotify_service.configuration.config_parser import ConfigParser
-from services.spotify_service.environment.environment_types import EnvironmentTypes
-from services.spotify_service.logic.spotify_manager import SpotifyManager
-from services.spotify_service.logic.spotify_manager_config import SpotifyManagerConfig
-from services.spotify_service.repository.api_client.api_client import ApiClient
-from services.spotify_service.repository.api_client.api_client_config import ApiClientConfig
-from services.spotify_service.repository.playlist_handler import PlaylistHandler
-from services.spotify_service.repository.search_handler import SearchHandler
-from services.spotify_service.authorization.authorization_manager import AuthorizationManager
-from services.spotify_service.configuration.spotify_config import SpotifyConfig
+import spotify
 
-
-logger = get_logger(__name__)
+logger = spotify.get_logger(__name__)
 
 
 async def setup_spotify_authorization(
-    spotify_config: SpotifyConfig,
-    environment: Environment,
+    spotify_config: spotify.SpotifyConfig,
+    environment: spotify.Environment,
     user_authorization_timeout_seconds: int,
-) -> AuthorizationManager:
+) -> spotify.AuthorizationManager:
 
     auth_server_config = uvicorn.Config(
         FastAPI(),
@@ -40,12 +23,12 @@ async def setup_spotify_authorization(
         port=5000,
         log_level="critical",  # Minimize logging output for auth server
     )
-    auth_server = AuthorizationServer(
+    auth_server = spotify.AuthorizationServer(
         auth_server_config, user_authorization_timeout_seconds
     )
     logger.info("Successfully set up authorization server.")
 
-    auth_config = AuthorizationManagerConfig(
+    auth_config = spotify.AuthorizationManagerConfig(
         client_id=environment.spotify_client_id,
         client_secret=environment.spotify_client_secret,
         auth_url=spotify_config.api.authorization.auth_url,
@@ -55,27 +38,27 @@ async def setup_spotify_authorization(
         authorization_server=auth_server,
         environment=environment,
     )
-    auth_manager = AuthorizationManager(auth_config)
+    auth_manager = spotify.AuthorizationManager(auth_config)
     logger.info("Successfully set up authorization manager.")
 
     return auth_manager
 
 
 async def setup_spotify_manager(
-    auth_manager: AuthorizationManager,
-    env: Environment,
-    cfg: SpotifyConfig,
-) -> SpotifyManager:
+    auth_manager: spotify.AuthorizationManager,
+    env: spotify.Environment,
+    cfg: spotify.SpotifyConfig,
+) -> spotify.SpotifyManager:
 
-    api_client_config = ApiClientConfig()
-    api_client = ApiClient(api_client_config, auth_manager)
+    api_client_config = spotify.ApiClientConfig()
+    api_client = spotify.ApiClient(api_client_config, auth_manager)
     logger.info("Successfully set up Spotify API client.")
 
-    playlist_handler = PlaylistHandler(api_client, env.spotify_user_id)
-    search_handler = SearchHandler(api_client)
+    playlist_handler = spotify.PlaylistHandler(api_client, env.spotify_user_id)
+    search_handler = spotify.SearchHandler(api_client)
     logger.info("Successfully set up Spotify implementation handlers.")
 
-    spotify_manager_config = SpotifyManagerConfig(
+    spotify_manager_config = spotify.SpotifyManagerConfig(
         environment=env,
         managed_playlist_name=cfg.playlist.name,
         managed_playlist_is_public=True,
@@ -84,14 +67,14 @@ async def setup_spotify_manager(
         playlist_handler=playlist_handler,
         search_handler=search_handler,
     )
-    spotify_manager = SpotifyManager(spotify_manager_config)
+    spotify_manager = spotify.SpotifyManager(spotify_manager_config)
     logger.info("Successfully set up Spotify logic manager.")
 
     return spotify_manager
 
 
 async def update_managed_playlist(
-    spotify_manager: SpotifyManager, new_tracks: List[ExternalTrack]
+    spotify_manager: spotify.SpotifyManager, new_tracks: List[spotify.ExternalTrack]
 ) -> None:
     try:
         await spotify_manager.update_managed_playlist(new_tracks)
@@ -101,10 +84,10 @@ async def update_managed_playlist(
         logger.error("Unable to update the managed playlist: %s", str(e))
 
 
-async def setup(environment: EnvironmentTypes) -> SpotifyManager:
-    env = Environment(environment)
+async def setup(environment: spotify.EnvironmentTypes) -> spotify.SpotifyManager:
+    env = spotify.Environment(environment)
 
-    cfg_parser = ConfigParser(env.spotify_config_file)
+    cfg_parser = spotify.ConfigParser(env.spotify_config_file)
     spotify_config = cfg_parser.parse()
 
     spotify_auth_manager = await setup_spotify_authorization(
@@ -130,18 +113,18 @@ async def main() -> None:
 
     # Retrieve the environment type
     env_arg: Optional[str] = parser.parse_args().env
-    env_type = EnvironmentTypes(env_arg) if env_arg else EnvironmentTypes.DEVELOPMENT
+    env_type = spotify.EnvironmentTypes(env_arg) if env_arg else spotify.EnvironmentTypes.DEVELOPMENT
 
     spotify_manager = await setup(env_type)
 
     hardcoded_tracks = [
-        ExternalTrack("Bonkers (live)", "Bizkit Park"),
-        ExternalTrack("No Stress", "Laurent Wolf"),
-        ExternalTrack("You Know I'm No Good", "Arctic Monkeys"),
-        ExternalTrack("Sun In Her Eyes", "Tom Helsen"),
-        ExternalTrack("First It Giveth", "Queens Of The Stone Age"),
-        ExternalTrack("Nieuws Studio Brussel", None),
-        ExternalTrack("Squeeze Me", "Kraak & Smaak Ft Ben Westbeech"),
+        spotify.ExternalTrack("Bonkers (live)", "Bizkit Park"),
+        spotify.ExternalTrack("No Stress", "Laurent Wolf"),
+        spotify.ExternalTrack("You Know I'm No Good", "Arctic Monkeys"),
+        spotify.ExternalTrack("Sun In Her Eyes", "Tom Helsen"),
+        spotify.ExternalTrack("First It Giveth", "Queens Of The Stone Age"),
+        spotify.ExternalTrack("Nieuws Studio Brussel", None),
+        spotify.ExternalTrack("Squeeze Me", "Kraak & Smaak Ft Ben Westbeech"),
     ]
 
     # Update the managed playlist indefinitely once every day
